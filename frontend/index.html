@@ -1,0 +1,358 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Polyplaces &mdash; Custom 3D Map Sculptures</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="./assets/css/styles.css"/>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo" onclick="showLanding();return false">Polyplaces<sup>&reg;</sup></a>
+  <ul class="nav-links">
+    <li><a href="#how">How it works</a></li>
+    <li><a href="#products">Sculptures</a></li>
+    <li><a href="#reviews">Reviews</a></li>
+    <li><a href="#" class="nav-cta btn" onclick="showStore();return false">Customise yours &rarr;</a></li>
+  </ul>
+</nav>
+
+<!-- LANDING -->
+<div id="landing">
+
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-tag">Made to order &middot; Ships in 4&ndash;6 weeks</div>
+    <h1 class="hero-h1">Your place.<br><em>In relief.</em></h1>
+    <p class="hero-sub">We create precise 3D sculptures of any location on Earth &mdash; from the city block where you met, to the mountain you climbed. Every piece is unique to you.</p>
+    <div class="hero-actions">
+      <a href="#" class="btn btn-fill" onclick="showStore();return false">Design yours</a>
+      <a href="#how" class="btn btn-outline">How it works</a>
+    </div>
+    <div class="hero-proof">
+      <div class="proof-item"><div class="num">847</div><div class="lbl">Sculptures made</div></div>
+      <div class="proof-item"><div class="num">4.9&#9733;</div><div class="lbl">Average rating</div></div>
+      <div class="proof-item"><div class="num">62</div><div class="lbl">Countries shipped</div></div>
+    </div>
+  </div>
+  <div class="hero-right">
+    <div class="topo-art">
+      <svg viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 480Q140 440 200 420Q265 398 310 370Q360 340 420 300" stroke="#f5f0e8" stroke-width="0.7"/>
+        <path d="M80 450Q125 405 200 382Q270 358 320 328Q372 296 430 254" stroke="#f5f0e8" stroke-width="0.7"/>
+        <path d="M62 418Q112 368 200 343Q276 316 330 282Q385 246 440 200" stroke="#f5f0e8" stroke-width="0.7"/>
+        <path d="M50 382Q106 328 200 300Q280 272 338 234Q395 194 448 144" stroke="#f5f0e8" stroke-width="0.7"/>
+        <path d="M44 342Q106 285 200 256Q284 226 346 186Q405 144 454 88" stroke="#f5f0e8" stroke-width="0.7"/>
+        <path d="M48 296Q114 238 200 208Q288 178 354 136Q414 92 456 34" stroke="#f5f0e8" stroke-width="0.7"/>
+        <line x1="0" y1="200" x2="500" y2="200" stroke="#f5f0e8" stroke-width="0.4" opacity="0.2"/>
+        <line x1="0" y1="300" x2="500" y2="300" stroke="#f5f0e8" stroke-width="0.4" opacity="0.2"/>
+        <line x1="200" y1="0" x2="200" y2="500" stroke="#f5f0e8" stroke-width="0.4" opacity="0.2"/>
+        <line x1="320" y1="0" x2="320" y2="500" stroke="#f5f0e8" stroke-width="0.4" opacity="0.2"/>
+        <rect x="215" y="215" width="22" height="18" fill="#f5f0e8" opacity="0.07"/>
+        <rect x="244" y="210" width="15" height="26" fill="#f5f0e8" opacity="0.07"/>
+        <rect x="265" y="218" width="28" height="14" fill="#f5f0e8" opacity="0.07"/>
+        <rect x="215" y="238" width="18" height="16" fill="#f5f0e8" opacity="0.07"/>
+        <rect x="300" y="212" width="14" height="22" fill="#f5f0e8" opacity="0.07"/>
+        <circle cx="250" cy="250" r="6" fill="#c94f2c"/>
+        <circle cx="250" cy="250" r="18" stroke="#c94f2c" stroke-width="1.2" opacity="0.4"/>
+        <circle cx="250" cy="250" r="34" stroke="#c94f2c" stroke-width="0.7" opacity="0.2"/>
+        <rect x="160" y="160" width="180" height="180" stroke="#f5f0e8" stroke-width="1" stroke-dasharray="5 4" opacity="0.25"/>
+      </svg>
+    </div>
+    <div class="hero-product-card">
+      <div class="hpc-swatch"></div>
+      <div>
+        <div class="hpc-name">Neighbourhood &middot; 500m&sup2;</div>
+        <div class="hpc-detail">Matte white &middot; 20&times;20cm &middot; Ships in gift box</div>
+      </div>
+      <div class="hpc-price">&pound;89</div>
+    </div>
+  </div>
+</section>
+
+<section id="how" style="padding:100px 0;background:var(--white)">
+  <div class="container">
+    <div class="hiw-header reveal">
+      <div class="section-label">How it works</div>
+      <h2 class="section-h">From map to <em>masterpiece</em></h2>
+      <p>Choose your place, pick a scale, and we sculpt your topography into a tactile keepsake.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 20V4M4 12h16"/></svg>
+        </div>
+        <div class="step-num">01</div>
+        <div class="step-title">Select your area</div>
+        <div class="step-body">Choose the place that matters. Drag the frame on the map until it captures the exact footprint.</div>
+      </div>
+      <div class="step reveal d1">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>
+        </div>
+        <div class="step-num">02</div>
+        <div class="step-title">We sculpt in 3D</div>
+        <div class="step-body">Our studio translates contours and elevations into a crisp, physical relief.</div>
+      </div>
+      <div class="step reveal d2">
+        <div class="step-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 6l8 12 8-12"/></svg>
+        </div>
+        <div class="step-num">03</div>
+        <div class="step-title">Receive your sculpture</div>
+        <div class="step-body">Packed in a gift-ready box, complete with a coordinate card and care notes.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="products" style="padding:90px 0">
+  <div class="container">
+    <div class="prod-header reveal">
+      <div>
+        <div class="section-label">Shop sizes</div>
+        <h2 class="section-h">Pick your <em>scale</em></h2>
+      </div>
+      <div class="prod-header-right">Need a custom size? <a href="#custom-band">Talk to us</a></div>
+    </div>
+
+    <div class="product-grid">
+      <div class="prod-card featured reveal" onclick="showStore()">
+        <div class="prod-img">
+          <div class="prod-img-inner">
+            <svg viewBox="0 0 440 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M20 260Q76 232 160 214Q248 196 304 178Q368 160 430 136" stroke="#1a1714" stroke-width="0.6" opacity="0.3"/>
+              <path d="M20 238Q80 205 160 190Q245 174 305 158Q368 140 430 116" stroke="#1a1714" stroke-width="0.6" opacity="0.3"/>
+              <path d="M20 216Q82 180 160 164Q248 146 308 130Q372 112 430 86" stroke="#1a1714" stroke-width="0.6" opacity="0.3"/>
+              <path d="M20 190Q84 152 160 136Q250 116 312 100Q376 82 430 54" stroke="#1a1714" stroke-width="0.6" opacity="0.3"/>
+              <line x1="0" y1="120" x2="440" y2="120" stroke="#1a1714" stroke-width="0.4" opacity="0.12"/>
+              <line x1="0" y1="180" x2="440" y2="180" stroke="#1a1714" stroke-width="0.4" opacity="0.12"/>
+              <line x1="140" y1="0" x2="140" y2="280" stroke="#1a1714" stroke-width="0.4" opacity="0.12"/>
+              <line x1="280" y1="0" x2="280" y2="280" stroke="#1a1714" stroke-width="0.4" opacity="0.12"/>
+              <rect x="148" y="126" width="16" height="14" fill="#1a1714" opacity="0.1"/>
+              <rect x="170" y="122" width="12" height="20" fill="#1a1714" opacity="0.1"/>
+              <rect x="188" y="128" width="22" height="12" fill="#1a1714" opacity="0.1"/>
+              <rect x="216" y="120" width="16" height="28" fill="#1a1714" opacity="0.1"/>
+              <rect x="238" y="126" width="14" height="20" fill="#1a1714" opacity="0.1"/>
+              <circle cx="200" cy="140" r="4" fill="#c94f2c" opacity="0.8"/>
+              <circle cx="200" cy="140" r="12" stroke="#c94f2c" stroke-width="1" opacity="0.3"/>
+              <rect x="100" y="80" width="200" height="160" stroke="#c94f2c" stroke-width="1.5" stroke-dasharray="6 4" fill="none" opacity="0.5"/>
+            </svg>
+          </div>
+        </div>
+        <div class="prod-info">
+          <div class="prod-size-tag">500m &times; 500m</div>
+          <div class="prod-name">Neighbourhood</div>
+          <div class="prod-desc">A single neighbourhood in perfect relief. Ideal for where you live, work, or grew up. Ships as a 20&times;20cm matte white sculpture.</div>
+          <div class="prod-footer">
+            <div class="prod-price">&pound;89 <small>+ shipping</small></div>
+            <button class="prod-btn" onclick="event.stopPropagation();showStore()">Customise &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prod-card reveal d1" onclick="showStore()">
+        <div class="prod-img">
+          <div class="prod-img-inner">
+            <svg viewBox="0 0 280 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10 200Q60 175 110 162Q165 148 210 135Q248 122 275 106" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
+              <path d="M10 176Q62 148 110 136Q168 122 212 108Q250 94 275 78" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
+              <path d="M10 150Q64 120 110 108Q170 94 215 80Q252 64 275 46" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
+              <line x1="0" y1="110" x2="280" y2="110" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <line x1="90" y1="0" x2="90" y2="220" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <line x1="190" y1="0" x2="190" y2="220" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <rect x="60" y="50" width="160" height="130" stroke="#c94f2c" stroke-width="1.5" stroke-dasharray="5 4" fill="none" opacity="0.5"/>
+              <circle cx="140" cy="110" r="3.5" fill="#c94f2c" opacity="0.8"/>
+            </svg>
+          </div>
+        </div>
+        <div class="prod-info">
+          <div class="prod-size-tag">1km &times; 1km</div>
+          <div class="prod-name">District</div>
+          <div class="prod-desc">A full district in glorious detail. More streets, more buildings, more of the place you love.</div>
+          <div class="prod-footer">
+            <div class="prod-price">&pound;129 <small>+ shipping</small></div>
+            <button class="prod-btn" onclick="event.stopPropagation();showStore()">Customise &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prod-card reveal d1" onclick="showStore()">
+        <div class="prod-img">
+          <div class="prod-badge" style="background:var(--ink)">Gift pick</div>
+          <div class="prod-img-inner" style="width:55%">
+            <svg viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 260Q45 235 80 222Q120 208 155 192Q182 178 198 160" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
+              <path d="M5 234Q46 206 80 194Q122 178 157 162Q184 146 198 126" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
+              <path d="M5 206Q47 176 80 164Q124 148 159 130Q186 114 198 90" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
+              <line x1="0" y1="140" x2="200" y2="140" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <line x1="100" y1="0" x2="100" y2="280" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <rect x="20" y="30" width="160" height="224" stroke="#c94f2c" stroke-width="1.5" stroke-dasharray="5 4" fill="none" opacity="0.5"/>
+              <circle cx="100" cy="140" r="3.5" fill="#c94f2c" opacity="0.8"/>
+            </svg>
+          </div>
+        </div>
+        <div class="prod-info">
+          <div class="prod-size-tag">1km &times; A4 ratio</div>
+          <div class="prod-name">Portrait</div>
+          <div class="prod-desc">Portrait format &mdash; frames beautifully on a wall. A thoughtful gift for someone who cherishes a particular place.</div>
+          <div class="prod-footer">
+            <div class="prod-price">&pound;129 <small>+ shipping</small></div>
+            <button class="prod-btn" onclick="event.stopPropagation();showStore()">Customise &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="prod-card reveal d2" onclick="showStore()">
+        <div class="prod-img">
+          <div class="prod-img-inner">
+            <svg viewBox="0 0 280 220" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M5 200Q50 172 100 158Q158 142 200 126Q242 110 278 90" stroke="#1a1714" stroke-width="0.8" opacity="0.25"/>
+              <path d="M5 170Q52 140 100 126Q160 108 202 92Q244 76 278 54" stroke="#1a1714" stroke-width="0.8" opacity="0.25"/>
+              <path d="M5 138Q54 106 100 92Q162 74 204 58Q246 42 278 18" stroke="#1a1714" stroke-width="0.8" opacity="0.25"/>
+              <line x1="0" y1="110" x2="280" y2="110" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <line x1="140" y1="0" x2="140" y2="220" stroke="#1a1714" stroke-width="0.5" opacity="0.1"/>
+              <rect x="20" y="20" width="240" height="185" stroke="#c94f2c" stroke-width="1.5" stroke-dasharray="5 4" fill="none" opacity="0.5"/>
+              <circle cx="140" cy="110" r="3.5" fill="#c94f2c" opacity="0.8"/>
+            </svg>
+          </div>
+        </div>
+        <div class="prod-info">
+          <div class="prod-size-tag">2km &times; 2km</div>
+          <div class="prod-name">Quarter</div>
+          <div class="prod-desc">Our largest standard size. Capture entire city quarters, valleys, or coastlines in extraordinary topographic detail.</div>
+          <div class="prod-footer">
+            <div class="prod-price">&pound;179 <small>+ shipping</small></div>
+            <button class="prod-btn" onclick="event.stopPropagation();showStore()">Customise &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- CUSTOM BAND -->
+<div id="custom-band" style="background:var(--accent);padding:64px 40px;display:flex;align-items:center;justify-content:space-between;gap:40px;">
+  <div class="custom-text">
+    <div class="kicker">Bespoke commissions</div>
+    <h2>Need a custom size or format?</h2>
+    <p>We can sculpt almost any area, at any scale. Large-format pieces and corporate commissions available. Get in touch.</p>
+  </div>
+  <button class="btn-white">Get in touch &rarr;</button>
+</div>
+
+<!-- REVIEWS -->
+<section id="reviews" style="background:var(--white);padding:80px 0">
+  <div class="container">
+    <div class="reveal">
+      <div class="section-label">Customer reviews</div>
+      <h2 class="section-h">People love their <em>places</em></h2>
+    </div>
+    <div class="reviews-grid">
+      <div class="review-card reveal">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="review-text">"I ordered a sculpture of the street where I proposed to my wife. She cried when she opened it. Genuinely one of the best gifts I've ever given."</p>
+        <div class="reviewer">Tom H. <span>&middot; London, UK</span></div>
+      </div>
+      <div class="review-card reveal d1">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="review-text">"The level of detail is astonishing &mdash; you can see every building on our block. It sits on our mantelpiece and every visitor asks where it's from."</p>
+        <div class="reviewer">Marie-Claire D. <span>&middot; Paris, France</span></div>
+      </div>
+      <div class="review-card reveal d2">
+        <div class="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="review-text">"Bought one of my hometown for my dad who moved abroad 30 years ago. He was completely speechless. Fast shipping, beautifully packaged."</p>
+        <div class="reviewer">Priya S. <span>&middot; Mumbai, India</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /landing -->
+
+<!-- STORE PAGE -->
+<div id="storePage">
+  <div class="store-hero">
+    <div style="max-width:1380px;margin:0 auto;padding:0 40px">
+      <a href="#" class="store-back" onclick="showLanding();return false">
+        <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+        Back to shop
+      </a>
+      <div class="store-hero-inner">
+        <div>
+          <h1>Design your <em>sculpture</em></h1>
+          <p>Select the area you want captured. Drag the selection box on the map until it frames exactly the place that matters to you.</p>
+        </div>
+        <div>
+          <div class="store-progress">
+            <div class="prog-step active">1 &middot; Select area</div>
+            <div class="prog-step">2 &middot; Review</div>
+            <div class="prog-step">3 &middot; Checkout</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="configurator">
+    <div class="config-left">
+      <div class="config-section-title">Scale</div>
+      <div class="size-options">
+        <div class="size-opt active" data-size="500"><div class="size-opt-info"><div class="size-opt-name">Neighbourhood</div><div class="size-opt-sub">500m &times; 500m</div></div><div class="size-opt-price">&pound;89</div></div>
+        <div class="size-opt" data-size="1000"><div class="size-opt-info"><div class="size-opt-name">District</div><div class="size-opt-sub">1km &times; 1km</div></div><div class="size-opt-price">&pound;129</div></div>
+        <div class="size-opt" data-size="2000"><div class="size-opt-info"><div class="size-opt-name">Quarter</div><div class="size-opt-sub">2km &times; 2km</div></div><div class="size-opt-price">&pound;179</div></div>
+        <div class="size-opt" data-size="a4"><div class="size-opt-info"><div class="size-opt-name">Portrait</div><div class="size-opt-sub">1km &times; A4 ratio</div></div><div class="size-opt-price">&pound;129</div></div>
+      </div>
+      <div class="config-note" style="margin-top:24px">
+        <strong>Every sculpture includes:</strong>
+        Matte white finish &middot; Numbered edition &middot; Coordinate card &middot; Gift-ready box &middot; One free revision
+      </div>
+    </div>
+
+    <div class="config-map">
+      <div id="store-map"></div>
+      <div class="map-hint" id="map-hint">Select a scale to place your frame</div>
+    </div>
+
+    <div class="config-right">
+      <div class="order-summary-title">Your order</div>
+      <div class="order-line"><span class="order-line-label">Scale</span><span class="order-line-val" id="order-scale">&mdash;</span></div>
+      <div class="order-line"><span class="order-line-label">Location</span><span class="order-line-val pending" id="order-location">Select on map</span></div>
+      <div class="order-line"><span class="order-line-label">Finish</span><span class="order-line-val">Matte white</span></div>
+      <div class="order-line"><span class="order-line-label">Delivery</span><span class="order-line-val">4&ndash;6 weeks</span></div>
+      <div class="order-divider"></div>
+      <div class="order-total"><span class="label">Total</span><span class="price" id="order-price">&mdash;</span></div>
+      <div class="order-status" id="order-status-msg">Choose a scale on the left and drag the frame to your chosen location.</div>
+      <div class="order-cta">
+        <button class="btn-order" id="sel-run" disabled>Continue to review &rarr;</button>
+        <button class="btn-order-sec" id="sel-clear">Clear selection</button>
+        <div class="trust-row">
+          <span class="trust-item">Secure checkout</span>
+          <span class="trust-item">Free returns</span>
+          <span class="trust-item">UK made</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-brand-col footer-col">
+    <div class="footer-logo">Polyplaces<sup>&reg;</sup></div>
+    <div class="footer-tagline">Bespoke 3D map sculptures, made to order in the UK. Every place. Every person.</div>
+  </div>
+  <div class="footer-col"><h4>Shop</h4><ul><li><a href="#" onclick="showStore();return false">Design yours</a></li><li><a href="#products">Neighbourhood</a></li><li><a href="#products">District</a></li><li><a href="#products">Quarter</a></li></ul></div>
+  <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">How it works</a></li><li><a href="#">Reviews</a></li><li><a href="#">Contact</a></li></ul></div>
+  <div class="footer-col"><h4>Help</h4><ul><li><a href="#">Shipping &amp; returns</a></li><li><a href="#">FAQ</a></li><li><a href="#">Care guide</a></li><li><a href="#">Privacy policy</a></li></ul></div>
+  <div class="footer-bottom"><span class="footer-copy">&copy; 2025 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span></div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="./assets/js/app.js"></script>
+</body>
+</html>
