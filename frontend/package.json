@@ -1,0 +1,10 @@
+﻿{
+  "name": "polyplaces-frontend",
+  "private": true,
+  "scripts": {
+    "serve": "serve -l 3000 ."
+  },
+  "devDependencies": {
+    "serve": "^14.2.1"
+  }
+}

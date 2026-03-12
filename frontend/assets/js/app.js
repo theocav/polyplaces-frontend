@@ -19,12 +19,16 @@ const scaleNames = {
   '2000': 'Quarter \u00B7 2km\u00D72km',
   a4: 'Portrait \u00B7 1km\u00D7A4',
 };
+const cartStorageKey = 'polyplaces_cart_v1';
+const apiBase =
+  document.querySelector('meta[name="api-base"]')?.getAttribute('content')?.replace(/\/$/, '') || '';
 
 let storeInited = false;
 
 function showStore() {
   document.getElementById('landing').style.display = 'none';
   document.getElementById('storePage').style.display = 'block';
+  document.body.classList.add('store-open');
   window.scrollTo(0, 0);
   if (!storeInited) {
     initMap();
@@ -35,10 +39,18 @@ function showStore() {
 function showLanding() {
   document.getElementById('storePage').style.display = 'none';
   document.getElementById('landing').style.display = 'block';
+  document.body.classList.remove('store-open');
   window.scrollTo(0, 0);
 }
 
 let map, layerGroup, bbox, bboxLayer, handle, selectedSize;
+let selectionMeta = null;
+let cart = [];
+let buildingsFillLayer = null;
+let buildingsOutlineLayer = null;
+let buildingsAnimation = null;
+let reverseGeocodeTimer = null;
+let lastReverseStamp = 0;
 
 function initMap() {
   map = L.map('store-map', { zoomControl: true }).setView([51.505, -0.09], 14);
@@ -63,19 +75,16 @@ function initMap() {
       layerGroup.clearLayers();
       createBBox(map.getCenter(), hIcon);
       document.getElementById('sel-run').disabled = false;
+      document.getElementById('sel-run').textContent = 'Continue to review \u2192';
       document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
       document.getElementById('order-scale').textContent = scaleNames[selectedSize];
       document.getElementById('order-price').textContent = `\u00A3${prices[selectedSize]}`;
       document.getElementById('order-status-msg').textContent = 'Looking good! Adjust the frame then continue.';
-      document.getElementById('order-location').textContent = 'London, UK (adjust on map)';
-      document.getElementById('order-location').classList.remove('pending');
+      updateLocationDisplay();
     };
   });
 
-  document.getElementById('sel-run').onclick = () => {
-    document.getElementById('order-status-msg').textContent = '\u2713 Area confirmed. Ready to review your order.';
-    document.getElementById('sel-run').textContent = '\u2713 Confirmed \u2014 continue';
-  };
+  document.getElementById('sel-run').onclick = reviewSelection;
   document.getElementById('sel-clear').onclick = clearMap;
 
   selectedSize = '500';
@@ -84,8 +93,7 @@ function initMap() {
   document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
   document.getElementById('order-scale').textContent = scaleNames['500'];
   document.getElementById('order-price').textContent = '\u00A389';
-  document.getElementById('order-location').textContent = 'London, UK (adjust on map)';
-  document.getElementById('order-location').classList.remove('pending');
+  updateLocationDisplay();
   document.getElementById('order-status-msg').textContent = 'Frame placed! Drag to your chosen location.';
 }
 
@@ -113,6 +121,7 @@ function computeBBox(c) {
 function createBBox(c, icon) {
   bbox = computeBBox(c);
   drawBBox(icon);
+  updateLocationDisplay();
 }
 
 function drawBBox(icon) {
@@ -156,10 +165,12 @@ function moveFromHandle(ll) {
     ]);
   }
   if (handle) handle.setLatLng([bbox.north, bbox.west]);
+  updateLocationDisplay();
 }
 
 function clearMap() {
   layerGroup.clearLayers();
+  clearBuildings();
   if (bboxLayer) {
     map.removeLayer(bboxLayer);
     bboxLayer = null;
@@ -180,6 +191,273 @@ function clearMap() {
   document.getElementById('map-hint').textContent = 'Select a scale to place your frame';
   document.querySelectorAll('.size-opt').forEach((b) => b.classList.remove('active'));
   selectedSize = null;
+  selectionMeta = null;
+}
+
+function updateLocationDisplay() {
+  if (!bbox) return;
+  const center = {
+    lat: (bbox.south + bbox.north) / 2,
+    lng: (bbox.west + bbox.east) / 2,
+  };
+  const lat = center.lat.toFixed(5);
+  const lng = center.lng.toFixed(5);
+  const locationText = `Lat ${lat}, Lng ${lng}`;
+  selectionMeta = {
+    center,
+    bbox,
+    locationText,
+  };
+  const locationEl = document.getElementById('order-location');
+  locationEl.textContent = locationText;
+  locationEl.classList.remove('pending');
+  const btn = document.getElementById('sel-run');
+  if (btn && btn.textContent.includes('Added to cart')) {
+    btn.textContent = 'Continue to review \u2192';
+  }
+  queueReverseGeocode(center);
+}
+
+function queueReverseGeocode(center) {
+  if (!center) return;
+  if (reverseGeocodeTimer) clearTimeout(reverseGeocodeTimer);
+  reverseGeocodeTimer = setTimeout(() => {
+    const now = Date.now();
+    if (now - lastReverseStamp < 1100) {
+      queueReverseGeocode(center);
+      return;
+    }
+    lastReverseStamp = now;
+    reverseGeocode(center);
+  }, 700);
+}
+
+async function reverseGeocode(center) {
+  try {
+    const url = `${apiBase}/api/reverse-geocode?lat=${center.lat}&lon=${center.lng}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Reverse geocoding failed.');
+    const data = await res.json();
+    const label =
+      data?.label ||
+      data?.display_name ||
+      `Lat ${center.lat.toFixed(5)}, Lng ${center.lng.toFixed(5)}`;
+    selectionMeta = { ...selectionMeta, locationText: label };
+    const locationEl = document.getElementById('order-location');
+    locationEl.textContent = label;
+    locationEl.classList.remove('pending');
+  } catch {
+    // Keep coordinate fallback on any error.
+  }
+}
+
+function loadCart() {
+  try {
+    const stored = JSON.parse(localStorage.getItem(cartStorageKey));
+    cart = Array.isArray(stored) ? stored : [];
+  } catch {
+    cart = [];
+  }
+}
+
+function saveCart() {
+  localStorage.setItem(cartStorageKey, JSON.stringify(cart));
+}
+
+function formatPrice(value) {
+  return `\u00A3${value.toFixed(0)}`;
+}
+
+function renderCart() {
+  const cartItemsEl = document.getElementById('cart-items');
+  const cartCountEl = document.getElementById('cart-count');
+  const cartTotalEl = document.getElementById('cart-total');
+  const checkoutBtn = document.getElementById('cart-checkout');
+
+  cartItemsEl.innerHTML = '';
+  cartCountEl.textContent = String(cart.length);
+
+  if (cart.length === 0) {
+    cartItemsEl.innerHTML = '<div class="cart-empty">Your cart is empty. Add a sculpture to continue.</div>';
+    cartTotalEl.textContent = '\u00A30';
+    checkoutBtn.disabled = true;
+    return;
+  }
+  checkoutBtn.disabled = false;
+
+  let total = 0;
+  cart.forEach((item, idx) => {
+    total += item.price;
+    const itemEl = document.createElement('div');
+    itemEl.className = 'cart-item';
+    itemEl.innerHTML = `
+      <div class="cart-item-title">${item.name}</div>
+      <div class="cart-item-meta">${item.location}</div>
+      <div class="cart-item-row">
+        <div class="cart-item-price">${formatPrice(item.price)}</div>
+        <button class="cart-item-remove" data-index="${idx}">Remove</button>
+      </div>
+    `;
+    cartItemsEl.appendChild(itemEl);
+  });
+
+  cartTotalEl.textContent = formatPrice(total);
+  cartItemsEl.querySelectorAll('.cart-item-remove').forEach((btn) => {
+    btn.onclick = () => {
+      const index = Number(btn.dataset.index);
+      cart.splice(index, 1);
+      saveCart();
+      renderCart();
+    };
+  });
+}
+
+function addSelectionToCart() {
+  if (!selectedSize || !selectionMeta) return;
+  const id =
+    typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+  const item = {
+    id,
+    name: scaleNames[selectedSize],
+    price: prices[selectedSize],
+    location: selectionMeta.locationText,
+    bbox: selectionMeta.bbox,
+    center: selectionMeta.center,
+  };
+  cart.push(item);
+  saveCart();
+  renderCart();
+}
+
+function openCart() {
+  document.body.classList.add('cart-open');
+  document.getElementById('cart-drawer').setAttribute('aria-hidden', 'false');
+}
+
+function closeCart() {
+  document.body.classList.remove('cart-open');
+  document.getElementById('cart-drawer').setAttribute('aria-hidden', 'true');
+}
+
+async function checkoutCart() {
+  if (cart.length === 0) return;
+  const checkoutBtn = document.getElementById('cart-checkout');
+  checkoutBtn.disabled = true;
+  checkoutBtn.textContent = 'Redirecting...';
+  try {
+    const res = await fetch(`${apiBase}/api/checkout`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: cart }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.url) throw new Error(data.error || 'Checkout failed');
+    window.location.href = data.url;
+  } catch (err) {
+    alert(err.message || 'Unable to start checkout.');
+  } finally {
+    checkoutBtn.disabled = false;
+    checkoutBtn.textContent = 'Checkout securely with Stripe';
+  }
+}
+
+function initCartUI() {
+  loadCart();
+  renderCart();
+  document.getElementById('cart-toggle').onclick = openCart;
+  document.getElementById('cart-close').onclick = closeCart;
+  document.getElementById('cart-overlay').onclick = closeCart;
+  document.getElementById('cart-checkout').onclick = checkoutCart;
+}
+
+initCartUI();
+
+async function reviewSelection() {
+  if (!selectedSize || !bbox || !selectionMeta) return;
+  const btn = document.getElementById('sel-run');
+  btn.disabled = true;
+  btn.textContent = 'Loading building outlines...';
+  document.getElementById('order-status-msg').textContent = 'Zooming to your frame and loading buildings.';
+
+  const bounds = L.latLngBounds([bbox.south, bbox.west], [bbox.north, bbox.east]);
+  map.fitBounds(bounds, { padding: [24, 24] });
+
+  try {
+    await loadBuildingsForBBox(bbox);
+    addSelectionToCart();
+    document.getElementById('order-status-msg').textContent =
+      '\u2713 Buildings outlined. Added to cart.';
+    btn.textContent = '\u2713 Added to cart';
+    openCart();
+  } catch {
+    addSelectionToCart();
+    document.getElementById('order-status-msg').textContent =
+      'Could not load building outlines. Added to cart anyway.';
+    btn.textContent = '\u2713 Added to cart';
+    openCart();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function clearBuildings() {
+  if (buildingsFillLayer) {
+    map.removeLayer(buildingsFillLayer);
+    buildingsFillLayer = null;
+  }
+  if (buildingsOutlineLayer) {
+    map.removeLayer(buildingsOutlineLayer);
+    buildingsOutlineLayer = null;
+  }
+  if (buildingsAnimation) {
+    clearInterval(buildingsAnimation);
+    buildingsAnimation = null;
+  }
+}
+
+async function loadBuildingsForBBox(b) {
+  clearBuildings();
+  const bboxParam = `${b.south},${b.west},${b.north},${b.east}`;
+  const res = await fetch(`${apiBase}/api/buildings?bbox=${bboxParam}`);
+  if (!res.ok) throw new Error('Buildings API failed');
+  const data = await res.json();
+  const features = (data?.features || []).map((f) => f);
+  buildingsFillLayer = L.geoJSON(features, {
+    style: () => ({
+      color: '#c94f2c',
+      weight: 0.9,
+      fillOpacity: 0.12,
+      fillColor: '#c94f2c',
+    }),
+  }).addTo(map);
+  buildingsOutlineLayer = L.geoJSON(features, {
+    style: () => ({
+      color: '#c94f2c',
+      weight: 1.4,
+      opacity: 0.95,
+      fillOpacity: 0,
+    }),
+  }).addTo(map);
+
+  startBuildingWave();
+}
+
+function startBuildingWave() {
+  if (!buildingsFillLayer) return;
+  const start = Date.now();
+  buildingsAnimation = setInterval(() => {
+    const t = (Date.now() - start) / 1000;
+    buildingsFillLayer.eachLayer((layer) => {
+      if (!layer.getBounds) return;
+      const c = layer.getBounds().getCenter();
+      const phase = t + c.lat * 8;
+      const lightness = 38 + Math.sin(phase) * 8;
+      const color = `hsl(12, 65%, ${lightness}%)`;
+      layer.setStyle({ color, fillColor: color });
+    });
+  }, 160);
 }
 
 window.showStore = showStore;
