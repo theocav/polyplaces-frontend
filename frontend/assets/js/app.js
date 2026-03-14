@@ -1,16 +1,26 @@
-﻿const obs = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((e) => {
-      if (e.isIntersecting) {
-        e.target.classList.add('in');
-        obs.unobserve(e.target);
-      }
-    });
-  },
-  { threshold: 0.1 }
-);
+document.body.classList.add('js');
 
-document.querySelectorAll('.reveal').forEach((el) => obs.observe(el));
+const prefersReducedMotion = window.matchMedia
+  ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  : false;
+
+if (prefersReducedMotion) {
+  document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
+} else {
+  const obs = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting) {
+          e.target.classList.add('in');
+          obs.unobserve(e.target);
+        }
+      });
+    },
+    { threshold: 0.1 }
+  );
+
+  document.querySelectorAll('.reveal').forEach((el) => obs.observe(el));
+}
 
 const cartStorageKey = 'polyplaces_cart_v1';
 const apiBase =
@@ -601,7 +611,69 @@ function initCartUI() {
   document.getElementById('cart-checkout').onclick = checkoutCart;
 }
 
+function initNavUI() {
+  const toggle = document.getElementById('nav-toggle');
+  const drawer = document.getElementById('nav-drawer');
+  const overlay = document.getElementById('nav-overlay');
+  if (!toggle || !drawer || !overlay) return;
+
+  const closeNav = () => {
+    document.body.classList.remove('nav-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    drawer.setAttribute('aria-hidden', 'true');
+    overlay.setAttribute('aria-hidden', 'true');
+  };
+
+  const openNav = () => {
+    document.body.classList.add('nav-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+    overlay.setAttribute('aria-hidden', 'false');
+  };
+
+  toggle.onclick = () => {
+    const isOpen = document.body.classList.contains('nav-open');
+    if (isOpen) {
+      closeNav();
+    } else {
+      openNav();
+    }
+  };
+
+  overlay.onclick = closeNav;
+  drawer.addEventListener('click', (e) => {
+    if (e.target.closest('a,button')) closeNav();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeNav();
+  });
+}
+
+function initLandingLinks() {
+  const links = document.querySelectorAll('a[data-show-landing="true"]');
+  links.forEach((link) => {
+    link.addEventListener('click', (e) => {
+      if (!document.body.classList.contains('store-open')) return;
+      e.preventDefault();
+      const target = link.getAttribute('href');
+      showLanding();
+      if (target && target.startsWith('#')) {
+        window.location.hash = target;
+        requestAnimationFrame(() => {
+          const el = document.querySelector(target);
+          if (el) {
+            el.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
+          }
+        });
+      }
+    });
+  });
+}
+
 initCartUI();
+initNavUI();
+initLandingLinks();
 showCheckoutBanner();
 
 async function reviewSelection() {
@@ -701,6 +773,7 @@ async function loadBuildingsForBBox(b) {
 }
 
 function startBuildingWave() {
+  if (prefersReducedMotion) return;
   if (!buildingsFillLayer) return;
   const start = Date.now();
   buildingsAnimation = setInterval(() => {
@@ -717,6 +790,7 @@ function startBuildingWave() {
 }
 
 function startOutlineShimmer() {
+  if (prefersReducedMotion) return;
   if (!buildingsOutlineLayer) return;
   const waveBounds = bbox
     ? {
@@ -757,3 +831,4 @@ function startOutlineShimmer() {
 
 window.showStore = showStore;
 window.showLanding = showLanding;
+

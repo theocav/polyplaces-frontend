@@ -3,30 +3,47 @@
 <head>
   <meta charset="utf-8"/>
   <title>Polyplaces &mdash; Custom 3D Map Sculptures</title>
+  <meta name="description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
+  <meta property="og:title" content="Polyplaces — Custom 3D Map Sculptures"/>
+  <meta property="og:description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
+  <meta property="og:type" content="website"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Polyplaces — Custom 3D Map Sculptures"/>
+  <meta name="twitter:description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <meta name="api-base" content="http://127.0.0.1:3001"/>
+  <meta name="api-base" content="/"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="./assets/css/styles.css"/>
 </head>
 <body>
 
+<a class="skip-link" href="#main">Skip to content</a>
+
 <nav>
-  <a href="#" class="nav-logo" onclick="showLanding();return false">Polyplaces<sup>&reg;</sup></a>
-  <ul class="nav-links">
-    <li><a href="#how">How it works</a></li>
-    <li><a href="#products">Sculptures</a></li>
-    <li><a href="#reviews">Reviews</a></li>
-    <li><a href="#" class="nav-cta btn" onclick="showStore();return false">Customise yours &rarr;</a></li>
-    <li><button class="nav-cart" id="cart-toggle">Cart <span id="cart-count">0</span></button></li>
-  </ul>
+  <a href="#landing" class="nav-logo" onclick="showLanding();return false">Polyplaces<sup>&reg;</sup></a>
+  <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+    <ul class="nav-links" id="nav-links">
+      <li><a href="#how" data-show-landing="true">How it works</a></li>
+      <li><a href="#products" data-show-landing="true">Sculptures</a></li>
+      <li><a href="#reviews" data-show-landing="true">Reviews</a></li>
+      <li><a href="#storePage" class="nav-cta btn" onclick="showStore();return false">Customise yours &rarr;</a></li>
+      <li><button class="nav-cart" id="cart-toggle">Cart <span id="cart-count">0</span></button></li>
+    </ul>
+  </div>
 </nav>
+<div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
 <div class="checkout-banner" id="checkout-banner" role="status" aria-live="polite" aria-hidden="true">
   <div class="checkout-banner-text" id="checkout-banner-text"></div>
   <button class="checkout-banner-close" id="checkout-banner-close" aria-label="Dismiss banner">Dismiss</button>
 </div>
 
+<main id="main">
 <!-- LANDING -->
 <div id="landing">
 
@@ -36,7 +53,7 @@
     <h1 class="hero-h1">Your place.<br><em>In relief.</em></h1>
     <p class="hero-sub">We create precise 3D sculptures of any location on Earth &mdash; from the city block where you met, to the mountain you climbed. Every piece is unique to you.</p>
     <div class="hero-actions">
-      <a href="#" class="btn btn-fill" onclick="showStore();return false">Design yours</a>
+      <a href="#storePage" class="btn btn-fill" onclick="showStore();return false">Design yours</a>
       <a href="#how" class="btn btn-outline">How it works</a>
     </div>
     <div class="hero-proof">
@@ -80,7 +97,7 @@
   </div>
 </section>
 
-<section id="how" style="padding:100px 0;background:var(--white)">
+<section id="how">
   <div class="container">
     <div class="hiw-header reveal">
       <div class="section-label">How it works</div>
@@ -116,7 +133,7 @@
   </div>
 </section>
 
-<section id="products" style="padding:90px 0">
+<section id="products">
   <div class="container">
     <div class="prod-header reveal">
       <div>
@@ -189,8 +206,8 @@
 
       <div class="prod-card reveal d1" onclick="showStore()">
         <div class="prod-img">
-          <div class="prod-badge" style="background:var(--ink)">Gift pick</div>
-          <div class="prod-img-inner" style="width:55%">
+          <div class="prod-badge prod-badge-ink">Gift pick</div>
+          <div class="prod-img-inner prod-img-inner-narrow">
             <svg viewBox="0 0 200 280" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M5 260Q45 235 80 222Q120 208 155 192Q182 178 198 160" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
               <path d="M5 234Q46 206 80 194Q122 178 157 162Q184 146 198 126" stroke="#1a1714" stroke-width="0.7" opacity="0.3"/>
@@ -243,7 +260,7 @@
 </section>
 
 <!-- CUSTOM BAND -->
-<div id="custom-band" style="background:var(--accent);padding:64px 40px;display:flex;align-items:center;justify-content:space-between;gap:40px;">
+<div id="custom-band">
   <div class="custom-text">
     <div class="kicker">Bespoke commissions</div>
     <h2>Need a custom size or format?</h2>
@@ -253,7 +270,7 @@
 </div>
 
 <!-- REVIEWS -->
-<section id="reviews" style="background:var(--white);padding:80px 0">
+<section id="reviews">
   <div class="container">
     <div class="reveal">
       <div class="section-label">Customer reviews</div>
@@ -284,14 +301,14 @@
 <!-- STORE PAGE -->
 <div id="storePage">
   <div class="store-hero">
-    <div style="max-width:1380px;margin:0 auto;padding:0 40px">
-      <a href="#" class="store-back" onclick="showLanding();return false">
+    <div class="store-hero-inner-wrap">
+      <a href="#landing" class="store-back" onclick="showLanding();return false">
         <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
         Back to shop
       </a>
       <div class="store-hero-inner">
         <div>
-          <h1>Design your <em>sculpture</em></h1>
+          <h2 class="store-title">Design your <em>sculpture</em></h2>
           <p>Select the area you want captured. Drag the selection box on the map until it frames exactly the place that matters to you.</p>
         </div>
         <div>
@@ -310,7 +327,7 @@
       <div class="config-section-title">Scale</div>
       <div class="size-options" id="size-options"></div>
       <div class="size-options-empty" id="size-options-empty">Loading sizes...</div>
-      <div class="config-note" style="margin-top:24px">
+      <div class="config-note">
         <strong>Every sculpture includes:</strong>
         Matte white finish &middot; Numbered edition &middot; Coordinate card &middot; Gift-ready box &middot; One free revision
       </div>
@@ -347,6 +364,7 @@
     </div>
   </div>
 </div>
+</main>
 
 <div class="cart-overlay" id="cart-overlay"></div>
 <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
@@ -369,8 +387,8 @@
     <div class="footer-logo">Polyplaces<sup>&reg;</sup></div>
     <div class="footer-tagline">Bespoke 3D map sculptures, made to order in the UK. Every place. Every person.</div>
   </div>
-  <div class="footer-col"><h4>Shop</h4><ul><li><a href="#" onclick="showStore();return false">Design yours</a></li><li><a href="#products">Neighbourhood</a></li><li><a href="#products">District</a></li><li><a href="#products">Quarter</a></li></ul></div>
-  <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#">How it works</a></li><li><a href="#">Reviews</a></li><li><a href="#">Contact</a></li></ul></div>
+  <div class="footer-col"><h4>Shop</h4><ul><li><a href="#storePage" onclick="showStore();return false">Design yours</a></li><li><a href="#products" data-show-landing="true">Neighbourhood</a></li><li><a href="#products" data-show-landing="true">District</a></li><li><a href="#products" data-show-landing="true">Quarter</a></li></ul></div>
+  <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#how" data-show-landing="true">How it works</a></li><li><a href="#reviews" data-show-landing="true">Reviews</a></li><li><a href="#">Contact</a></li></ul></div>
   <div class="footer-col"><h4>Help</h4><ul><li><a href="#">Shipping &amp; returns</a></li><li><a href="#">FAQ</a></li><li><a href="#">Care guide</a></li><li><a href="#">Privacy policy</a></li></ul></div>
   <div class="footer-bottom"><span class="footer-copy">&copy; 2025 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span></div>
 </footer>
