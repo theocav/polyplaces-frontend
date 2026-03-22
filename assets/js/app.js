@@ -380,8 +380,7 @@ function initMap() {
   document.getElementById('sel-run').onclick = reviewSelection;
   document.getElementById('sel-clear').onclick = clearMap;
 
-  // Frame placement is driven by the scale selector only (see selectProduct).
-  map.on('click', () => {});
+  // No map click handler: frame placement is driven by the scale selector only (see selectProduct).
 
   map.on('zoomend', () => {
     if (!bbox) return;
