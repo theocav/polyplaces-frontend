@@ -95,7 +95,6 @@ nav{
 
 #landing{padding-top:60px}
 #storePage{padding-top:60px;min-height:100vh}
-body.js #storePage{display:none}
 
 /* HERO */
 .hero{background:var(--ink);min-height:92vh;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;}
@@ -162,7 +161,7 @@ body.js #storePage{display:none}
 .prod-header-right{font-size:13px;color:var(--mid)}
 .prod-header-right a{color:var(--accent);text-decoration:none}
 .product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-.prod-card{background:var(--white);border:1px solid var(--border);overflow:hidden;transition:transform 0.25s,box-shadow 0.25s;cursor:pointer;}
+.prod-card{display:block;background:var(--white);border:1px solid var(--border);overflow:hidden;transition:transform 0.25s,box-shadow 0.25s;cursor:pointer;text-decoration:none;color:inherit;}
 .prod-card:hover{transform:translateY(-4px);box-shadow:0 16px 40px rgba(26,23,20,0.1)}
 .prod-card.featured{grid-column:span 2}
 .prod-img{aspect-ratio:4/3;background:var(--bg-warm);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;}

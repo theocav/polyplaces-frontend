@@ -10,7 +10,7 @@ const PORT = process.env.PORT;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://127.0.0.1:5500,http://localhost:5500';
 const FRONTEND_ORIGINS = FRONTEND_URL.split(',').map((item) => item.trim()).filter(Boolean);
-const PRIMARY_FRONTEND_URL = 'http://127.0.0.1:5500';
+const PRIMARY_FRONTEND_URL = FRONTEND_ORIGINS[0] || 'http://127.0.0.1:5500';
 const BACKEND_URL = process.env.BACKEND_URL || `http://127.0.0.1:${PORT}`;
 const SUCCESS_REDIRECT_URL = process.env.STRIPE_SUCCESS_URL || `${PRIMARY_FRONTEND_URL}/?checkout=success`;
 const FAIL_REDIRECT_URL = process.env.STRIPE_FAIL_URL || `${PRIMARY_FRONTEND_URL}/?checkout=fail`;

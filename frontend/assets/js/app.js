@@ -245,20 +245,11 @@ function setupMapSearch() {
 }
 
 function showStore() {
-  document.getElementById('landing').style.display = 'none';
-  document.getElementById('storePage').style.display = 'block';
-  document.body.classList.add('store-open');
-  window.scrollTo(0, 0);
-  if (!storeInited) {
-    initStore();
-  }
+  window.location.href = '/store/';
 }
 
 function showLanding() {
-  document.getElementById('storePage').style.display = 'none';
-  document.getElementById('landing').style.display = 'block';
-  document.body.classList.remove('store-open');
-  window.scrollTo(0, 0);
+  window.location.href = '/';
 }
 
 let map, layerGroup, bbox, bboxLayer, handle;
@@ -650,31 +641,13 @@ function initNavUI() {
   });
 }
 
-function initLandingLinks() {
-  const links = document.querySelectorAll('a[data-show-landing="true"]');
-  links.forEach((link) => {
-    link.addEventListener('click', (e) => {
-      if (!document.body.classList.contains('store-open')) return;
-      e.preventDefault();
-      const target = link.getAttribute('href');
-      showLanding();
-      if (target && target.startsWith('#')) {
-        window.location.hash = target;
-        requestAnimationFrame(() => {
-          const el = document.querySelector(target);
-          if (el) {
-            el.scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth' });
-          }
-        });
-      }
-    });
-  });
-}
-
 initCartUI();
 initNavUI();
-initLandingLinks();
 showCheckoutBanner();
+
+if (document.getElementById('storePage')) {
+  initStore();
+}
 
 async function reviewSelection() {
   if (!selectedProduct || !bbox || !selectionMeta) return;

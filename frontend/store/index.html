@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Design Your Sculpture — Polyplaces</title>
+  <meta name="description" content="Design your custom 3D map sculpture. Select an area, choose a scale, and review your order before checkout."/>
+  <meta property="og:title" content="Design Your Sculpture — Polyplaces"/>
+  <meta property="og:description" content="Design your custom 3D map sculpture. Select an area, choose a scale, and review your order before checkout."/>
+  <meta property="og:type" content="website"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="Design Your Sculpture — Polyplaces"/>
+  <meta name="twitter:description" content="Design your custom 3D map sculpture. Select an area, choose a scale, and review your order before checkout."/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="api-base" content="https://api.polyplaces.co.uk"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="../assets/css/styles.css"/>
+</head>
+<body>
+
+<a class="skip-link" href="#main">Skip to content</a>
+
+<nav>
+  <a href="/" class="nav-logo">Polyplaces<sup>&reg;</sup></a>
+  <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+    <ul class="nav-links" id="nav-links">
+      <li><a href="/#how">How it works</a></li>
+      <li><a href="/#products">Sculptures</a></li>
+      <li><a href="/#reviews">Reviews</a></li>
+      <li><a href="/store/" class="nav-cta btn">Customise yours &rarr;</a></li>
+      <li><button class="nav-cart" id="cart-toggle">Cart <span id="cart-count">0</span></button></li>
+    </ul>
+  </div>
+</nav>
+<div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
+<div class="checkout-banner" id="checkout-banner" role="status" aria-live="polite" aria-hidden="true">
+  <div class="checkout-banner-text" id="checkout-banner-text"></div>
+  <button class="checkout-banner-close" id="checkout-banner-close" aria-label="Dismiss banner">Dismiss</button>
+</div>
+
+<main id="main">
+  <div id="storePage">
+    <div class="store-hero">
+      <div class="store-hero-inner-wrap">
+        <a href="/" class="store-back">
+          <svg viewBox="0 0 24 24"><path d="M19 12H5M5 12l7 7M5 12l7-7"/></svg>
+          Back to shop
+        </a>
+        <div class="store-hero-inner">
+          <div>
+            <h1 class="store-title">Design your <em>sculpture</em></h1>
+            <p>Select the area you want captured. Drag the selection box on the map until it frames exactly the place that matters to you.</p>
+          </div>
+          <div>
+            <div class="store-progress">
+              <div class="prog-step active">1 &middot; Select area</div>
+              <div class="prog-step">2 &middot; Review</div>
+              <div class="prog-step">3 &middot; Checkout</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="configurator">
+      <div class="config-left">
+        <div class="config-section-title">Scale</div>
+        <div class="size-options" id="size-options"></div>
+        <div class="size-options-empty" id="size-options-empty">Loading sizes...</div>
+        <div class="config-note">
+          <strong>Every sculpture includes:</strong>
+          Matte white finish &middot; Numbered edition &middot; Coordinate card &middot; Gift-ready box &middot; One free revision
+        </div>
+      </div>
+
+      <div class="config-map">
+        <div id="store-map"></div>
+        <div class="map-search">
+          <input id="map-search-input" type="search" placeholder="Search for a place" autocomplete="off"/>
+          <button id="map-search-btn" type="button">Search</button>
+          <div class="map-search-results" id="map-search-results" aria-live="polite"></div>
+        </div>
+        <div class="map-hint" id="map-hint">Select a scale to place your frame</div>
+      </div>
+
+      <div class="config-right">
+        <div class="order-summary-title">Your order</div>
+        <div class="order-line"><span class="order-line-label">Scale</span><span class="order-line-val" id="order-scale">&mdash;</span></div>
+        <div class="order-line"><span class="order-line-label">Location</span><span class="order-line-val pending" id="order-location">Select on map</span></div>
+        <div class="order-line"><span class="order-line-label">Finish</span><span class="order-line-val">Matte white</span></div>
+        <div class="order-line"><span class="order-line-label">Delivery</span><span class="order-line-val">4&ndash;6 weeks</span></div>
+        <div class="order-divider"></div>
+        <div class="order-total"><span class="label">Total</span><span class="price" id="order-price">&mdash;</span></div>
+        <div class="order-status" id="order-status-msg">Choose a scale on the left and drag the frame to your chosen location.</div>
+        <div class="order-cta">
+          <button class="btn-order" id="sel-run" disabled>Continue to review &rarr;</button>
+          <button class="btn-order-sec" id="sel-clear">Clear selection</button>
+          <div class="trust-row">
+            <span class="trust-item">Secure checkout</span>
+            <span class="trust-item">Free returns</span>
+            <span class="trust-item">UK made</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div class="cart-overlay" id="cart-overlay"></div>
+<aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+  <div class="cart-header">
+    <h3>Your cart</h3>
+    <button class="cart-close" id="cart-close" aria-label="Close cart">Close</button>
+  </div>
+  <div class="cart-items" id="cart-items">
+    <div class="cart-empty">Your cart is empty. Add a sculpture to continue.</div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total-row"><span class="label">Subtotal</span><span class="value" id="cart-total">&pound;0</span></div>
+    <button class="cart-checkout" id="cart-checkout">Checkout securely with Stripe</button>
+    <div class="cart-note">You will be redirected to Stripe for payment.</div>
+  </div>
+</aside>
+
+<footer>
+  <div class="footer-brand-col footer-col">
+    <div class="footer-logo">Polyplaces<sup>&reg;</sup></div>
+    <div class="footer-tagline">Bespoke 3D map sculptures, made to order in the UK. Every place. Every person.</div>
+  </div>
+  <div class="footer-col"><h4>Shop</h4><ul><li><a href="/store/">Design yours</a></li><li><a href="/#products">Neighbourhood</a></li><li><a href="/#products">District</a></li><li><a href="/#products">Quarter</a></li></ul></div>
+  <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="/#how">How it works</a></li><li><a href="/#reviews">Reviews</a></li><li><a href="#">Contact</a></li></ul></div>
+  <div class="footer-col"><h4>Help</h4><ul><li><a href="#">Shipping &amp; returns</a></li><li><a href="#">FAQ</a></li><li><a href="#">Care guide</a></li><li><a href="#">Privacy policy</a></li></ul></div>
+  <div class="footer-bottom"><span class="footer-copy">&copy; 2025 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span></div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="../assets/js/app.js"></script>
+</body>
+</html>
