@@ -106,6 +106,11 @@ function showCheckoutBanner() {
   banner.setAttribute('aria-hidden', 'false');
   textEl.textContent = message;
 
+  if (status === 'success') {
+    // Stripe returned successfully; clear the cart so users don't accidentally repurchase.
+    clearCart();
+  }
+
   closeBtn.onclick = () => {
     banner.classList.remove('show', 'is-success', 'is-fail', 'is-abort');
     banner.setAttribute('aria-hidden', 'true');
@@ -193,7 +198,7 @@ function selectProduct(product) {
     }
   } else {
     document.getElementById('order-status-msg').textContent =
-      'Select a scale, then click the map to place your frame.';
+      'Select a scale to place your frame.';
     document.getElementById('map-hint').textContent = 'Select a scale to place your frame';
   }
 }
@@ -245,11 +250,21 @@ function setupMapSearch() {
     const lon = Number(item?.lon);
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
     map.setView([lat, lon], Math.max(map.getZoom(), 14), { animate: false });
-    createBBox({ lat, lng: lon }, handleIcon);
-    if (bbox) {
-      document.getElementById('sel-run').disabled = false;
-      document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
-      document.getElementById('order-status-msg').textContent = 'Looking good! Adjust the frame then continue.';
+
+    // After search, always center the frame on the new viewport center (if a product is selected).
+    if (selectedProduct && map && handleIcon) {
+      const center = map.getCenter();
+      const next = computeBBoxForProduct(center, selectedProduct);
+      if (next) {
+        if (bbox && bboxLayer && handle) {
+          animateBBoxTo(next, 420);
+        } else {
+          createBBox(center, handleIcon);
+        }
+        document.getElementById('sel-run').disabled = false;
+        document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
+        document.getElementById('order-status-msg').textContent = 'Looking good! Adjust the frame then continue.';
+      }
     }
     clearResults();
   };
@@ -338,6 +353,7 @@ let buildingsOutlineAnimation = null;
 let reverseGeocodeTimer = null;
 let lastReverseStamp = 0;
 let reviewReady = false;
+let cartPreviewMaps = new Map();
 
 function initMap() {
   const ukBounds = L.latLngBounds([49.8, -8.7], [60.9, 1.9]);
@@ -364,13 +380,8 @@ function initMap() {
   document.getElementById('sel-run').onclick = reviewSelection;
   document.getElementById('sel-clear').onclick = clearMap;
 
-  map.on('click', (e) => {
-    if (!selectedProduct) return;
-    createBBox(e.latlng, handleIcon);
-    document.getElementById('sel-run').disabled = false;
-    document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
-    document.getElementById('order-status-msg').textContent = 'Looking good! Adjust the frame then continue.';
-  });
+  // Frame placement is driven by the scale selector only (see selectProduct).
+  map.on('click', () => {});
 
   map.on('zoomend', () => {
     if (!bbox) return;
@@ -378,6 +389,94 @@ function initMap() {
       clearFrame();
     }
   });
+}
+
+function clearCart() {
+  cart = [];
+  try {
+    localStorage.removeItem(cartStorageKey);
+  } catch {
+    // ignore
+  }
+  renderCart();
+}
+
+function bboxToBounds(b) {
+  if (!b) return null;
+  const south = Number(b.south);
+  const west = Number(b.west);
+  const north = Number(b.north);
+  const east = Number(b.east);
+  if (![south, west, north, east].every(Number.isFinite)) return null;
+  return L.latLngBounds([south, west], [north, east]);
+}
+
+function syncCartPreviewMaps() {
+  if (typeof L === 'undefined') return;
+  const previewEls = Array.from(document.querySelectorAll('.cart-item-preview'));
+  const keep = new Set();
+
+  previewEls.forEach((el) => {
+    const id = String(el.dataset.itemId || '');
+    const item = cart.find((i) => String(i?.id) === id);
+    if (!id || !item?.bbox) return;
+
+    const bounds = bboxToBounds(item.bbox);
+    if (!bounds) return;
+
+    keep.add(id);
+    const existing = cartPreviewMaps.get(id);
+    if (existing) {
+      existing.rect.setBounds(bounds);
+      existing.map.fitBounds(bounds, { padding: [10, 10], animate: false });
+      existing.map.invalidateSize(false);
+      return;
+    }
+
+    // Ensure container is empty (Leaflet will inject its own DOM)
+    el.innerHTML = '';
+
+    const m = L.map(el, {
+      zoomControl: false,
+      attributionControl: false,
+      dragging: false,
+      scrollWheelZoom: false,
+      doubleClickZoom: false,
+      boxZoom: false,
+      keyboard: false,
+      tap: false,
+      touchZoom: false,
+    });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '\u00A9 OpenStreetMap',
+    }).addTo(m);
+
+    const rect = L.rectangle(bounds, {
+      color: '#c94f2c',
+      weight: 2,
+      fillColor: '#c94f2c',
+      fillOpacity: 0.06,
+      dashArray: '6 4',
+    }).addTo(m);
+
+    m.fitBounds(bounds, { padding: [10, 10], animate: false });
+
+    cartPreviewMaps.set(id, { map: m, rect });
+
+    // If the drawer is animating open, sizes can be wrong at first render.
+    setTimeout(() => m.invalidateSize(false), 80);
+  });
+
+  for (const [id, entry] of cartPreviewMaps.entries()) {
+    if (keep.has(id)) continue;
+    try {
+      entry.map.remove();
+    } catch {
+      // ignore
+    }
+    cartPreviewMaps.delete(id);
+  }
 }
 
 function mToLat(m) {
@@ -545,8 +644,8 @@ function clearFrame() {
   document.getElementById('order-location').textContent = 'Select on map';
   document.getElementById('order-location').classList.add('pending');
   document.getElementById('order-status-msg').textContent =
-    'Click on the map to place your frame, then drag the handle to adjust.';
-  document.getElementById('map-hint').textContent = 'Click the map to place your frame';
+    'Select a scale to place your frame.';
+  document.getElementById('map-hint').textContent = 'Select a scale to place your frame';
 }
 
 function clearMap() {
@@ -556,7 +655,7 @@ function clearMap() {
   document.getElementById('order-scale').textContent = '\u2014';
   document.getElementById('order-price').textContent = '\u2014';
   document.getElementById('order-status-msg').textContent =
-    'Choose a scale, then click the map to place your frame.';
+    'Choose a scale to place your frame.';
   document.getElementById('map-hint').textContent = 'Select a scale to place your frame';
   document.querySelectorAll('.size-opt').forEach((b) => b.classList.remove('active'));
   selectedProduct = null;
@@ -646,6 +745,7 @@ function renderCart() {
   const cartCountEl = document.getElementById('cart-count');
   const cartTotalEl = document.getElementById('cart-total');
   const checkoutBtn = document.getElementById('cart-checkout');
+  if (!cartItemsEl || !cartCountEl || !cartTotalEl || !checkoutBtn) return;
 
   cartItemsEl.innerHTML = '';
   cartCountEl.textContent = String(cart.length);
@@ -654,6 +754,7 @@ function renderCart() {
     cartItemsEl.innerHTML = '<div class="cart-empty">Your cart is empty. Add a sculpture to continue.</div>';
     cartTotalEl.textContent = '\u00A30';
     checkoutBtn.disabled = true;
+    syncCartPreviewMaps();
     return;
   }
   checkoutBtn.disabled = false;
@@ -665,6 +766,7 @@ function renderCart() {
     const itemEl = document.createElement('div');
     itemEl.className = 'cart-item';
     itemEl.innerHTML = `
+      <div class="cart-item-preview" data-item-id="${item.id}"></div>
       <div class="cart-item-title">${item.name}</div>
       <div class="cart-item-meta">${item.location}</div>
       <div class="cart-item-row">
@@ -684,6 +786,8 @@ function renderCart() {
       renderCart();
     };
   });
+
+  syncCartPreviewMaps();
 }
 
 function addSelectionToCart() {
@@ -712,6 +816,7 @@ function addSelectionToCart() {
 function openCart() {
   document.body.classList.add('cart-open');
   document.getElementById('cart-drawer').setAttribute('aria-hidden', 'false');
+  syncCartPreviewMaps();
 }
 
 function closeCart() {
