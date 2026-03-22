@@ -1,12 +1,10 @@
 ﻿{
-  "name": "polyplaces",
+  "name": "polyplaces-frontend",
   "private": true,
   "scripts": {
-    "dev": "concurrently \"npm:dev --prefix backend\" \"npm:serve --prefix frontend\"",
-    "dev:backend": "npm run dev --prefix backend",
-    "dev:frontend": "npm run serve --prefix frontend"
+    "serve": "serve -l 3000 ."
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "serve": "^14.2.1"
   }
 }
