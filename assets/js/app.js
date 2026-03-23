@@ -455,17 +455,31 @@ function syncCartPreviewMaps() {
     const bounds = resolveCartItemBBox(item);
     if (!bounds) {
       // Older carts (or fallback data) may not include enough info to preview.
+      el.classList.add('is-fallback');
       el.innerHTML = '<div class="cart-item-preview-fallback">Preview unavailable</div>';
       return;
     }
 
+    el.classList.remove('is-fallback');
     keep.add(id);
     const existing = cartPreviewMaps.get(id);
     if (existing) {
+      const existingContainer = existing?.container || existing?.map?._container || null;
+      const containerDetached = existingContainer ? !document.body.contains(existingContainer) : true;
+      const containerMismatch = existingContainer ? existingContainer !== el : true;
+      if (containerDetached || containerMismatch) {
+        try {
+          existing.map.remove();
+        } catch {
+          // ignore
+        }
+        cartPreviewMaps.delete(id);
+      } else {
       existing.rect.setBounds(bounds);
       existing.map.fitBounds(bounds, { padding: [10, 10], animate: false });
       existing.map.invalidateSize(false);
       return;
+      }
     }
 
     // Ensure container is empty (Leaflet will inject its own DOM)
@@ -497,7 +511,7 @@ function syncCartPreviewMaps() {
 
     m.fitBounds(bounds, { padding: [10, 10], animate: false });
 
-    cartPreviewMaps.set(id, { map: m, rect });
+    cartPreviewMaps.set(id, { map: m, rect, container: el });
 
     // If the drawer is animating open, sizes can be wrong at first render.
     setTimeout(() => {
