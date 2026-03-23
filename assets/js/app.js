@@ -414,20 +414,50 @@ function syncCartPreviewMaps() {
   if (typeof L === 'undefined') return;
   const previewEls = Array.from(document.querySelectorAll('.cart-item-preview'));
   const keep = new Set();
+  let cartMutated = false;
+
+  const resolveCartItemBBox = (item) => {
+    const existingBounds = bboxToBounds(item?.bbox);
+    if (existingBounds) return existingBounds;
+
+    // Back-compat: older carts may be missing `bbox`, but we can often recompute it from
+    // the stored `center` and known product dimensions.
+    const center = item?.center;
+    if (!center || !Number.isFinite(Number(center.lat)) || !Number.isFinite(Number(center.lng))) return null;
+
+    const resolvedProduct =
+      products.find((p) => String(p?.id) === String(item?.productId)) ||
+      fallbackProducts.find((p) => String(p?.id) === String(item?.productId));
+
+    // If we can't resolve a product entry (e.g., cart opened on pages where products
+    // aren't loaded), fall back to dimensions stored on the cart item itself.
+    const pseudoProduct = resolvedProduct
+      ? resolvedProduct
+      : {
+          sizeCode: item?.sizeCode,
+          aspectRatio: item?.aspectRatio,
+        };
+
+    const computed = computeBBoxForProduct({ lat: Number(center.lat), lng: Number(center.lng) }, pseudoProduct);
+    const computedBounds = bboxToBounds(computed);
+    if (!computedBounds) return null;
+
+    item.bbox = computed;
+    cartMutated = true;
+    return computedBounds;
+  };
 
   previewEls.forEach((el) => {
     const id = String(el.dataset.itemId || '');
     const item = cart.find((i) => String(i?.id) === id);
     if (!id) return;
 
-    if (!item?.bbox) {
-      // Older carts (or fallback data) may not include bbox yet; show an explicit placeholder.
+    const bounds = resolveCartItemBBox(item);
+    if (!bounds) {
+      // Older carts (or fallback data) may not include enough info to preview.
       el.innerHTML = '<div class="cart-item-preview-fallback">Preview unavailable</div>';
       return;
     }
-
-    const bounds = bboxToBounds(item.bbox);
-    if (!bounds) return;
 
     keep.add(id);
     const existing = cartPreviewMaps.get(id);
@@ -459,10 +489,10 @@ function syncCartPreviewMaps() {
 
     const rect = L.rectangle(bounds, {
       color: '#c94f2c',
-      weight: 2,
+      weight: 3,
       fillColor: '#c94f2c',
-      fillOpacity: 0.06,
-      dashArray: '6 4',
+      fillOpacity: 0.12,
+      dashArray: '5 4',
     }).addTo(m);
 
     m.fitBounds(bounds, { padding: [10, 10], animate: false });
@@ -496,6 +526,14 @@ function syncCartPreviewMaps() {
       // ignore
     }
     cartPreviewMaps.delete(id);
+  }
+
+  if (cartMutated) {
+    try {
+      saveCart();
+    } catch {
+      // ignore
+    }
   }
 }
 
@@ -823,6 +861,7 @@ function addSelectionToCart() {
     name: selectedProduct.name,
     displaySize: selectedProduct.displaySize,
     sizeCode: selectedProduct.sizeCode,
+    aspectRatio: selectedProduct.aspectRatio,
     price: Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) / 100 : NaN,
     location: selectionMeta.locationText,
     bbox: selectionMeta.bbox,
