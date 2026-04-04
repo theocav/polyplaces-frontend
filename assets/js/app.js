@@ -43,6 +43,9 @@ let storeInited = false;
 let products = [];
 let selectedProduct = null;
 let handleIcon = null;
+let cartFocusCleanup = null;
+let navFocusCleanup = null;
+let lastCartFocus = null;
 
 const fallbackProducts = [
   {
@@ -83,6 +86,53 @@ const fallbackProducts = [
     priceId: 'fallback_frame',
   },
 ];
+
+function getFocusableElements(container) {
+  if (!container) return [];
+  return Array.from(
+    container.querySelectorAll(
+      'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'
+    )
+  ).filter((el) => {
+    if (!(el instanceof HTMLElement)) return false;
+    const style = window.getComputedStyle(el);
+    return style.visibility !== 'hidden' && style.display !== 'none';
+  });
+}
+
+function createFocusTrap(container, onClose) {
+  const handler = (e) => {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      onClose?.();
+      return;
+    }
+    if (e.key !== 'Tab') return;
+
+    const focusables = getFocusableElements(container);
+    if (focusables.length === 0) {
+      e.preventDefault();
+      container?.focus?.();
+      return;
+    }
+
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && active === first) {
+      e.preventDefault();
+      last.focus();
+      return;
+    }
+    if (!e.shiftKey && active === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  document.addEventListener('keydown', handler);
+  return () => document.removeEventListener('keydown', handler);
+}
 
 function showCheckoutBanner() {
   const banner = document.getElementById('checkout-banner');
@@ -240,9 +290,15 @@ function setupMapSearch() {
   const resultsEl = document.getElementById('map-search-results');
   if (!input || !button || !resultsEl) return;
 
+  let activeIndex = -1;
+  let activeResults = [];
+
   const clearResults = () => {
     resultsEl.innerHTML = '';
     resultsEl.classList.remove('show');
+    resultsEl.setAttribute('aria-hidden', 'true');
+    activeIndex = -1;
+    activeResults = [];
   };
 
   const applyResult = (item) => {
@@ -269,21 +325,52 @@ function setupMapSearch() {
     clearResults();
   };
 
+  const setActiveIndex = (nextIndex, { focus = false } = {}) => {
+    if (!Array.isArray(activeResults) || activeResults.length === 0) return;
+    const clamped = Math.max(0, Math.min(activeResults.length - 1, nextIndex));
+    activeIndex = clamped;
+    resultsEl.querySelectorAll('.map-search-result[role="option"]').forEach((el) => {
+      const idx = Number(el.dataset.index);
+      el.setAttribute('aria-selected', idx === activeIndex ? 'true' : 'false');
+    });
+    if (focus) {
+      const el = resultsEl.querySelector(`.map-search-result[data-index="${activeIndex}"]`);
+      el?.focus?.();
+    }
+  };
+
   const renderResults = (items) => {
     resultsEl.innerHTML = '';
     if (!items || items.length === 0) {
-      resultsEl.innerHTML = '<div class="map-search-result">No results found.</div>';
+      const row = document.createElement('div');
+      row.className = 'map-search-result is-empty';
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', 'false');
+      row.textContent = 'No results found.';
+      resultsEl.appendChild(row);
       resultsEl.classList.add('show');
+      resultsEl.setAttribute('aria-hidden', 'false');
+      activeIndex = -1;
+      activeResults = [];
       return;
     }
-    items.forEach((item) => {
-      const row = document.createElement('div');
+    activeResults = items.slice();
+    activeIndex = 0;
+    items.forEach((item, idx) => {
+      const row = document.createElement('button');
       row.className = 'map-search-result';
+      row.type = 'button';
+      row.dataset.index = String(idx);
+      row.setAttribute('role', 'option');
+      row.setAttribute('aria-selected', idx === activeIndex ? 'true' : 'false');
       row.innerHTML = `<strong>${item.display_name}</strong>`;
       row.onclick = () => applyResult(item);
+      row.onmouseenter = () => setActiveIndex(idx);
+      row.onfocus = () => setActiveIndex(idx);
       resultsEl.appendChild(row);
     });
     resultsEl.classList.add('show');
+    resultsEl.setAttribute('aria-hidden', 'false');
   };
 
   const runSearch = async (autoSelectTop = false) => {
@@ -319,14 +406,49 @@ function setupMapSearch() {
 
   button.onclick = () => runSearch(false);
   input.onkeydown = (e) => {
+    const isOpen = resultsEl.classList.contains('show');
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (isOpen && activeIndex >= 0 && activeResults[activeIndex]) {
+        applyResult(activeResults[activeIndex]);
+        return;
+      }
       runSearch(true);
     }
     if (e.key === 'Escape') {
       clearResults();
     }
+    if (e.key === 'ArrowDown') {
+      if (!isOpen || activeResults.length === 0) return;
+      e.preventDefault();
+      setActiveIndex(activeIndex + 1, { focus: true });
+    }
+    if (e.key === 'ArrowUp') {
+      if (!isOpen || activeResults.length === 0) return;
+      e.preventDefault();
+      setActiveIndex(activeIndex - 1, { focus: true });
+    }
   };
+
+  resultsEl.addEventListener('keydown', (e) => {
+    const isOpen = resultsEl.classList.contains('show');
+    if (!isOpen) return;
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      clearResults();
+      input.focus();
+    }
+    if (e.key === 'ArrowDown') {
+      if (activeResults.length === 0) return;
+      e.preventDefault();
+      setActiveIndex(activeIndex + 1, { focus: true });
+    }
+    if (e.key === 'ArrowUp') {
+      if (activeResults.length === 0) return;
+      e.preventDefault();
+      setActiveIndex(activeIndex - 1, { focus: true });
+    }
+  });
 
   document.addEventListener('click', (e) => {
     if (!resultsEl.classList.contains('show')) return;
@@ -815,12 +937,17 @@ function formatPrice(value) {
 function renderCart() {
   const cartItemsEl = document.getElementById('cart-items');
   const cartCountEl = document.getElementById('cart-count');
+  const cartToggleEl = document.getElementById('cart-toggle');
   const cartTotalEl = document.getElementById('cart-total');
   const checkoutBtn = document.getElementById('cart-checkout');
   if (!cartItemsEl || !cartCountEl || !cartTotalEl || !checkoutBtn) return;
 
   cartItemsEl.innerHTML = '';
   cartCountEl.textContent = String(cart.length);
+  if (cartToggleEl) {
+    const suffix = cart.length === 1 ? 'item' : 'items';
+    cartToggleEl.setAttribute('aria-label', `Open cart (${cart.length} ${suffix})`);
+  }
 
   if (cart.length === 0) {
     cartItemsEl.innerHTML = '<div class="cart-empty">Your cart is empty. Add a sculpture to continue.</div>';
@@ -843,7 +970,7 @@ function renderCart() {
       <div class="cart-item-meta">${item.location}</div>
       <div class="cart-item-row">
         <div class="cart-item-price">${formatPrice(item.price)}</div>
-        <button class="cart-item-remove" data-index="${idx}">Remove</button>
+        <button type="button" class="cart-item-remove" data-index="${idx}">Remove</button>
       </div>
     `;
     cartItemsEl.appendChild(itemEl);
@@ -887,8 +1014,22 @@ function addSelectionToCart() {
 }
 
 function openCart() {
+  const drawer = document.getElementById('cart-drawer');
+  const overlay = document.getElementById('cart-overlay');
+  const toggle = document.getElementById('cart-toggle');
+  const closeBtn = document.getElementById('cart-close');
+  if (!drawer) return;
+  if (document.body.classList.contains('cart-open')) return;
+
+  lastCartFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   document.body.classList.add('cart-open');
-  document.getElementById('cart-drawer').setAttribute('aria-hidden', 'false');
+  drawer.setAttribute('aria-hidden', 'false');
+  overlay?.setAttribute('aria-hidden', 'false');
+  toggle?.setAttribute('aria-expanded', 'true');
+  cartFocusCleanup?.();
+  cartFocusCleanup = createFocusTrap(drawer, closeCart);
+  if (closeBtn) closeBtn.focus();
+  else drawer.focus();
   syncCartPreviewMaps();
   // Re-sync after the slide-in transition so Leaflet has the final layout box.
   setTimeout(syncCartPreviewMaps, 320);
@@ -896,8 +1037,20 @@ function openCart() {
 }
 
 function closeCart() {
+  const drawer = document.getElementById('cart-drawer');
+  const overlay = document.getElementById('cart-overlay');
+  const toggle = document.getElementById('cart-toggle');
+  if (!drawer) return;
+  if (!document.body.classList.contains('cart-open')) return;
+
   document.body.classList.remove('cart-open');
-  document.getElementById('cart-drawer').setAttribute('aria-hidden', 'true');
+  drawer.setAttribute('aria-hidden', 'true');
+  overlay?.setAttribute('aria-hidden', 'true');
+  toggle?.setAttribute('aria-expanded', 'false');
+  cartFocusCleanup?.();
+  cartFocusCleanup = null;
+  if (lastCartFocus && document.documentElement.contains(lastCartFocus)) lastCartFocus.focus();
+  lastCartFocus = null;
 }
 
 async function checkoutCart() {
@@ -943,16 +1096,26 @@ function initNavUI() {
 
   const closeNav = () => {
     document.body.classList.remove('nav-open');
+    toggle.setAttribute('aria-label', 'Open menu');
     toggle.setAttribute('aria-expanded', 'false');
     drawer.setAttribute('aria-hidden', 'true');
     overlay.setAttribute('aria-hidden', 'true');
+    navFocusCleanup?.();
+    navFocusCleanup = null;
+    toggle.focus();
   };
 
   const openNav = () => {
     document.body.classList.add('nav-open');
+    toggle.setAttribute('aria-label', 'Close menu');
     toggle.setAttribute('aria-expanded', 'true');
     drawer.setAttribute('aria-hidden', 'false');
     overlay.setAttribute('aria-hidden', 'false');
+    navFocusCleanup?.();
+    navFocusCleanup = createFocusTrap(drawer, closeNav);
+    const first = drawer.querySelector('a,button');
+    if (first instanceof HTMLElement) first.focus();
+    else if (drawer instanceof HTMLElement) drawer.focus();
   };
 
   toggle.onclick = () => {
@@ -967,10 +1130,6 @@ function initNavUI() {
   overlay.onclick = closeNav;
   drawer.addEventListener('click', (e) => {
     if (e.target.closest('a,button')) closeNav();
-  });
-
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') closeNav();
   });
 }
 

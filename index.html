@@ -4,9 +4,15 @@
   <meta charset="utf-8"/>
   <title>Polyplaces &mdash; Custom 3D Map Sculptures</title>
   <meta name="description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
+  <meta name="referrer" content="strict-origin-when-cross-origin"/>
+  <meta name="theme-color" content="#f7f4ef"/>
+  <meta name="color-scheme" content="light"/>
+  <link rel="canonical" href="https://polyplaces.co.uk/"/>
   <meta property="og:title" content="Polyplaces — Custom 3D Map Sculptures"/>
   <meta property="og:description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
   <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="Polyplaces"/>
+  <meta property="og:url" content="https://polyplaces.co.uk/"/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="Polyplaces — Custom 3D Map Sculptures"/>
   <meta name="twitter:description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
@@ -25,25 +31,25 @@
 
 <a class="skip-link" href="#main">Skip to content</a>
 
-<nav>
+<nav aria-label="Primary">
   <a href="/" class="nav-logo">Polyplaces<sup>&reg;</sup></a>
-  <button class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+  <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
     <span></span><span></span><span></span>
   </button>
-  <div class="nav-drawer" id="nav-drawer" aria-hidden="true">
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true" tabindex="-1">
     <ul class="nav-links" id="nav-links">
       <li><a href="#how">How it works</a></li>
       <li><a href="#products">Sculptures</a></li>
       <li><a href="#reviews">Reviews</a></li>
       <li><a href="/store/" class="nav-cta btn">Customise yours &rarr;</a></li>
-      <li><button class="nav-cart" id="cart-toggle">Cart <span id="cart-count">0</span></button></li>
+      <li><button type="button" class="nav-cart" id="cart-toggle" aria-label="Open cart" aria-expanded="false" aria-controls="cart-drawer">Cart <span id="cart-count">0</span></button></li>
     </ul>
   </div>
 </nav>
 <div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
 <div class="checkout-banner" id="checkout-banner" role="status" aria-live="polite" aria-hidden="true">
   <div class="checkout-banner-text" id="checkout-banner-text"></div>
-  <button class="checkout-banner-close" id="checkout-banner-close" aria-label="Dismiss banner">Dismiss</button>
+  <button type="button" class="checkout-banner-close" id="checkout-banner-close" aria-label="Dismiss banner">Dismiss</button>
 </div>
 
 <main id="main">
@@ -269,7 +275,7 @@
     <h2>Need a custom size or format?</h2>
     <p>We can sculpt almost any area, at any scale. Large-format pieces and corporate commissions available. Get in touch.</p>
   </div>
-  <button class="btn-white">Get in touch &rarr;</button>
+  <a class="btn-white" href="mailto:contact@polyplaces.co.uk?subject=Polyplaces%20%E2%80%94%20Custom%20commission">Get in touch &rarr;</a>
 </div>
 
 <!-- REVIEWS -->
@@ -303,18 +309,18 @@
 
 </main>
 
-<div class="cart-overlay" id="cart-overlay"></div>
-<aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+<div class="cart-overlay" id="cart-overlay" aria-hidden="true"></div>
+<aside class="cart-drawer" id="cart-drawer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Shopping cart" tabindex="-1">
   <div class="cart-header">
     <h3>Your cart</h3>
-    <button class="cart-close" id="cart-close" aria-label="Close cart">Close</button>
+    <button type="button" class="cart-close" id="cart-close" aria-label="Close cart">Close</button>
   </div>
   <div class="cart-items" id="cart-items">
     <div class="cart-empty">Your cart is empty. Add a sculpture to continue.</div>
   </div>
   <div class="cart-footer">
     <div class="cart-total-row"><span class="label">Subtotal</span><span class="value" id="cart-total">&pound;0</span></div>
-    <button class="cart-checkout" id="cart-checkout">Checkout securely with Stripe</button>
+    <button type="button" class="cart-checkout" id="cart-checkout">Checkout securely with Stripe</button>
     <div class="cart-note">You will be redirected to Stripe for payment.</div>
   </div>
 </aside>
@@ -327,11 +333,11 @@
   <div class="footer-col"><h4>Shop</h4><ul><li><a href="/store/">Design yours</a></li><li><a href="#products">Neighbourhood</a></li><li><a href="#products">District</a></li><li><a href="#products">Quarter</a></li></ul></div>
   <div class="footer-col"><h4>Company</h4><ul><li><a href="#">About</a></li><li><a href="#how">How it works</a></li><li><a href="#reviews">Reviews</a></li><li><a href="#">Contact</a></li></ul></div>
   <div class="footer-col"><h4>Help</h4><ul><li><a href="#">Shipping &amp; returns</a></li><li><a href="#">FAQ</a></li><li><a href="#">Care guide</a></li><li><a href="#">Privacy policy</a></li></ul></div>
-  <div class="footer-bottom"><span class="footer-copy">&copy; 2025 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span></div>
+  <div class="footer-bottom"><span class="footer-copy">&copy; 2026 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span></div>
 </footer>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="./assets/js/env.js?v=20260323"></script>
-<script src="./assets/js/app.js?v=20260323"></script>
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script defer src="./assets/js/env.js?v=20260323"></script>
+<script defer src="./assets/js/app.js?v=20260323"></script>
 </body>
 </html>

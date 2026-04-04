@@ -1,4 +1,4 @@
-# Hostinger Deployment (GitHub)
+﻿# Hostinger Deployment (GitHub)
 
 This repo is set up for two deployments:
 
