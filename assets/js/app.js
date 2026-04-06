@@ -77,13 +77,13 @@ const fallbackProducts = [
     priceId: 'fallback_quarter',
   },
   {
-    id: 'frame',
+    id: 'portrait',
     name: 'Frame',
     displaySize: '750m × 1.05km',
     sizeCode: 750,
     aspectRatio: 1.4,
     unitAmount: null,
-    priceId: 'fallback_frame',
+    priceId: 'fallback_portrait',
   },
 ];
 
@@ -173,6 +173,20 @@ function showCheckoutBanner() {
   }
 }
 
+function showBanner(message, type = 'fail') {
+  const banner = document.getElementById('checkout-banner');
+  const textEl = document.getElementById('checkout-banner-text');
+  const closeBtn = document.getElementById('checkout-banner-close');
+  if (!banner || !textEl || !closeBtn) return;
+  textEl.textContent = message;
+  banner.className = `checkout-banner show is-${type}`;
+  banner.setAttribute('aria-hidden', 'false');
+  closeBtn.onclick = () => {
+    banner.classList.remove('show', 'is-success', 'is-fail', 'is-abort');
+    banner.setAttribute('aria-hidden', 'true');
+  };
+}
+
 function formatPriceFromAmount(amount) {
   if (amount === null || typeof amount === 'undefined') return '\u00A3\u2014';
   const value = Number(amount) / 100;
@@ -241,7 +255,7 @@ function selectProduct(product) {
       }
       document.getElementById('sel-run').disabled = false;
       document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
-      document.getElementById('order-status-msg').textContent = 'Adjust the frame, then continue to review.';
+      document.getElementById('order-status-msg').textContent = 'Adjust the frame, then add to cart.';
     } else {
       document.getElementById('order-status-msg').textContent = 'Unable to place the frame for this size.';
       document.getElementById('map-hint').textContent = 'Select a different size';
@@ -319,7 +333,7 @@ function setupMapSearch() {
         }
         document.getElementById('sel-run').disabled = false;
         document.getElementById('map-hint').textContent = 'Drag the corner handle to reposition';
-        document.getElementById('order-status-msg').textContent = 'Looking good! Adjust the frame then continue.';
+        document.getElementById('order-status-msg').textContent = 'Looking good! Adjust the frame then add to cart.';
       }
     }
     clearResults();
@@ -468,13 +482,8 @@ function showLanding() {
 let map, layerGroup, bbox, bboxLayer, handle;
 let selectionMeta = null;
 let cart = [];
-let buildingsFillLayer = null;
-let buildingsOutlineLayer = null;
-let buildingsAnimation = null;
-let buildingsOutlineAnimation = null;
 let reverseGeocodeTimer = null;
 let lastReverseStamp = 0;
-let reviewReady = false;
 let cartPreviewMaps = new Map();
 
 function initMap() {
@@ -834,7 +843,7 @@ function clearFrame() {
   bbox = null;
   selectionMeta = null;
   document.getElementById('sel-run').disabled = true;
-  document.getElementById('sel-run').textContent = 'Continue to review \u2192';
+  document.getElementById('sel-run').textContent = 'Add to cart \u2192';
   document.getElementById('order-location').textContent = 'Select on map';
   document.getElementById('order-location').classList.add('pending');
   document.getElementById('order-status-msg').textContent =
@@ -845,7 +854,7 @@ function clearFrame() {
 function clearMap() {
   clearFrame();
   document.getElementById('sel-run').disabled = true;
-  document.getElementById('sel-run').textContent = 'Continue to review \u2192';
+  document.getElementById('sel-run').textContent = 'Add to cart \u2192';
   document.getElementById('order-scale').textContent = '\u2014';
   document.getElementById('order-price').textContent = '\u2014';
   document.getElementById('order-status-msg').textContent =
@@ -872,7 +881,7 @@ function updateLocationDisplay() {
   locationEl.classList.remove('pending');
   const btn = document.getElementById('sel-run');
   if (btn && btn.textContent.includes('Added to cart')) {
-    btn.textContent = 'Continue to review \u2192';
+    btn.textContent = 'Add to cart \u2192';
   }
   queueReverseGeocode(center);
 }
@@ -1056,7 +1065,7 @@ function closeCart() {
 async function checkoutCart() {
   if (cart.length === 0) return;
   if (cart.some((i) => String(i?.priceId || '').startsWith('fallback_'))) {
-    alert('Checkout is temporarily unavailable (sizes loaded from fallback config). Please try again shortly.');
+    showBanner('Checkout is temporarily unavailable. Please try again shortly.', 'fail');
     return;
   }
   const checkoutBtn = document.getElementById('cart-checkout');
@@ -1072,7 +1081,7 @@ async function checkoutCart() {
     if (!res.ok || !data.url) throw new Error(data.error || 'Checkout failed');
     window.location.href = data.url;
   } catch (err) {
-    alert(err.message || 'Unable to start checkout.');
+    showBanner(err.message || 'Unable to start checkout. Please try again.', 'fail');
   } finally {
     checkoutBtn.disabled = false;
     checkoutBtn.textContent = 'Checkout securely with Stripe';
@@ -1141,158 +1150,22 @@ if (document.getElementById('storePage')) {
   initStore();
 }
 
-async function reviewSelection() {
+function reviewSelection() {
   if (!selectedProduct || !bbox || !selectionMeta) return;
+  addSelectionToCart();
   const btn = document.getElementById('sel-run');
-  if (reviewReady) {
-    addSelectionToCart();
-    document.getElementById('order-status-msg').textContent = '\u2713 Added to cart.';
-    btn.textContent = '\u2713 Added to cart';
-    openCart();
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Loading building outlines...';
-  document.getElementById('order-status-msg').textContent = 'Zooming to your frame and loading buildings.';
-
-  const bounds = L.latLngBounds([bbox.south, bbox.west], [bbox.north, bbox.east]);
-  map.fitBounds(bounds, { padding: [24, 24] });
-
-  try {
-    await loadBuildingsForBBox(bbox);
-    reviewReady = true;
-    document.getElementById('order-status-msg').textContent =
-      '\u2713 Buildings outlined. Add to cart when ready.';
-    btn.textContent = 'Add to cart';
-  } catch (err) {
-    const msg = err?.message || '';
-    const hint =
-      msg.includes('Failed to fetch') || msg.includes('Network')
-        ? 'Could not reach the map service. Is the backend running?'
-        : 'Could not load building outlines.';
-    document.getElementById('order-status-msg').textContent =
-      `${hint} Please try again.`;
-    btn.textContent = 'Retry outlines';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-function clearBuildings() {
-  if (buildingsFillLayer) {
-    map.removeLayer(buildingsFillLayer);
-    buildingsFillLayer = null;
-  }
-  if (buildingsOutlineLayer) {
-    map.removeLayer(buildingsOutlineLayer);
-    buildingsOutlineLayer = null;
-  }
-  if (buildingsAnimation) {
-    clearInterval(buildingsAnimation);
-    buildingsAnimation = null;
-  }
-  if (buildingsOutlineAnimation) {
-    clearInterval(buildingsOutlineAnimation);
-    buildingsOutlineAnimation = null;
-  }
+  document.getElementById('order-status-msg').textContent = '\u2713 Added to cart.';
+  btn.textContent = '\u2713 Added to cart';
+  openCart();
 }
 
 function resetReviewState() {
-  clearBuildings();
-  reviewReady = false;
   const btn = document.getElementById('sel-run');
-  if (btn) {
-    btn.textContent = 'Continue to review \u2192';
-  }
-  document.getElementById('order-status-msg').textContent =
-    'Frame placed. Drag to adjust, then continue to review.';
+  if (btn) btn.textContent = 'Add to cart \u2192';
+  const statusEl = document.getElementById('order-status-msg');
+  if (statusEl) statusEl.textContent = 'Frame placed. Drag to adjust, then add to cart.';
 }
 
-async function loadBuildingsForBBox(b) {
-  clearBuildings();
-  const bboxParam = `${b.south},${b.west},${b.north},${b.east}`;
-  const res = await fetch(`${apiBase}/api/buildings?bbox=${bboxParam}`);
-  if (!res.ok) throw new Error('Buildings API failed');
-  const data = await res.json();
-  const features = (data?.features || []).map((f) => f);
-  buildingsFillLayer = L.geoJSON(features, {
-    style: () => ({
-      color: '#c94f2c',
-      weight: 0.9,
-      fillOpacity: 0.12,
-      fillColor: '#c94f2c',
-    }),
-  }).addTo(map);
-  buildingsOutlineLayer = L.geoJSON(features, {
-    style: () => ({
-      color: '#c94f2c',
-      weight: 1.4,
-      opacity: 0.95,
-      fillOpacity: 0,
-    }),
-  }).addTo(map);
-
-  startBuildingWave();
-  startOutlineShimmer();
-}
-
-function startBuildingWave() {
-  if (prefersReducedMotion) return;
-  if (!buildingsFillLayer) return;
-  const start = Date.now();
-  buildingsAnimation = setInterval(() => {
-    const t = (Date.now() - start) / 1000;
-    buildingsFillLayer.eachLayer((layer) => {
-      if (!layer.getBounds) return;
-      const c = layer.getBounds().getCenter();
-      const phase = t + c.lat * 8;
-      const lightness = 38 + Math.sin(phase) * 8;
-      const color = `hsl(12, 65%, ${lightness}%)`;
-      layer.setStyle({ color, fillColor: color });
-    });
-  }, 160);
-}
-
-function startOutlineShimmer() {
-  if (prefersReducedMotion) return;
-  if (!buildingsOutlineLayer) return;
-  const waveBounds = bbox
-    ? {
-        west: bbox.west,
-        east: bbox.east,
-        south: bbox.south,
-        north: bbox.north,
-      }
-    : buildingsOutlineLayer.getBounds();
-  const minX = waveBounds.getWest ? waveBounds.getWest() : waveBounds.west;
-  const maxX = waveBounds.getEast ? waveBounds.getEast() : waveBounds.east;
-  const minY = waveBounds.getSouth ? waveBounds.getSouth() : waveBounds.south;
-  const maxY = waveBounds.getNorth ? waveBounds.getNorth() : waveBounds.north;
-  const rangeX = Math.max(1e-9, maxX - minX);
-  const rangeY = Math.max(1e-9, maxY - minY);
-
-  const start = Date.now();
-  buildingsOutlineAnimation = setInterval(() => {
-    const t = (Date.now() - start) / 1000;
-    buildingsOutlineLayer.eachLayer((layer) => {
-      if (!layer.getBounds) return;
-      const c = layer.getBounds().getCenter();
-      const nx = (c.lng - minX) / rangeX;
-      const ny = (c.lat - minY) / rangeY;
-      const projection = (nx + ny) / 2;
-      const speed = 0.18;
-      const center = (t * speed) % 1;
-      let dist = Math.abs(projection - center);
-      if (dist > 0.5) dist = 1 - dist;
-      const band = Math.exp(-Math.pow(dist / 0.18, 2));
-      const opacity = 0.35 + band * 0.55;
-      const lightness = 50 + band * 16;
-      const color = `hsl(12, 70%, ${lightness}%)`;
-      layer.setStyle({ color, opacity });
-    });
-  }, 110);
-}
 
 window.showStore = showStore;
 window.showLanding = showLanding;

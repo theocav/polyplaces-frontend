@@ -315,6 +315,7 @@ footer{background:var(--ink);padding:56px 40px 32px;display:grid;grid-template-c
 .trust-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 .trust-item{font-size:11px;color:var(--light);display:flex;align-items:center;gap:4px}
 .trust-item::before{content:'\2713';color:var(--accent)}
+.order-email-note{font-size:11px;color:var(--light);text-align:center;line-height:1.5;padding-top:4px;}
 
 /* CART */
 .cart-drawer{
