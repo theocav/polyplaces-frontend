@@ -153,6 +153,12 @@ nav{
 #products{padding:90px 0}
 #reviews{padding:80px 0;background:var(--white)}
 
+/* STORY BAND */
+.story-band{padding:72px 0;background:var(--bg);border-top:1px solid var(--border)}
+.story-inner{max-width:580px;margin:0 auto;text-align:center}
+.story-lead{font-family:var(--serif);font-size:clamp(20px,2.4vw,28px);font-weight:300;font-style:italic;color:var(--ink);line-height:1.5;margin-bottom:14px}
+.story-close{font-size:14px;color:var(--mid);line-height:1.6}
+
 /* HOW IT WORKS */
 .hiw-header{text-align:center;margin-bottom:56px}
 .hiw-header p{color:var(--mid);font-size:15px;max-width:480px;margin:12px auto 0}
@@ -316,6 +322,33 @@ footer{background:var(--ink);padding:56px 40px 32px;display:grid;grid-template-c
 .trust-item{font-size:11px;color:var(--light);display:flex;align-items:center;gap:4px}
 .trust-item::before{content:'\2713';color:var(--accent)}
 .order-email-note{font-size:11px;color:var(--light);text-align:center;line-height:1.5;padding-top:4px;}
+
+/* size option enhancements */
+.size-opt-name-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.size-opt-badge{font-size:9px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--accent);background:var(--accent-bg);border:1px solid rgba(201,79,44,0.2);padding:2px 6px;border-radius:2px;white-space:nowrap;line-height:1.5}
+.size-opt-art{color:var(--light)}
+
+/* custom location label */
+.order-label-wrap{align-items:center}
+.order-label-optional{font-weight:400;color:var(--light);font-size:10px;font-style:italic}
+.order-label-input{border:none;border-bottom:1px solid var(--border);background:transparent;font-family:var(--sans);font-size:12px;color:var(--ink);width:150px;padding:3px 0;outline:none;text-align:right;transition:border-color 0.2s}
+.order-label-input:focus{border-bottom-color:var(--accent)}
+.order-label-input::placeholder{color:var(--light);font-style:italic}
+
+/* what you receive strip */
+.receive-strip{display:flex;border:1px solid var(--border);border-top:none}
+.receive-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 8px;border-right:1px solid var(--border);text-align:center}
+.receive-item:last-child{border-right:none}
+.receive-item svg{width:18px;height:18px;stroke:var(--mid);fill:none;stroke-width:1.5;flex-shrink:0}
+.receive-item span{font-size:10px;color:var(--light);line-height:1.3}
+
+/* proof note above add to cart */
+.order-proof-note{font-size:12px;color:var(--mid);background:var(--accent-bg);border:1px solid rgba(201,79,44,0.2);padding:9px 12px;display:flex;align-items:center;gap:7px;line-height:1.45}
+.order-proof-note::before{content:'\2713';color:var(--accent);font-weight:700;font-size:13px;flex-shrink:0}
+
+/* cart custom label */
+.cart-item-custom-label{font-weight:600;color:var(--ink)}
+.cart-item-geo{font-size:11px;color:var(--light);margin-top:1px}
 
 /* CART */
 .cart-drawer{

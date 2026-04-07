@@ -87,6 +87,13 @@ const fallbackProducts = [
   },
 ];
 
+const productMeta = {
+  neighbourhood: { artSize: '20\u00D720cm', badge: 'Most popular' },
+  district:      { artSize: '30\u00D730cm', badge: null },
+  portrait:      { artSize: '20\u00D728cm', badge: 'Best for gifting' },
+  quarter:       { artSize: '40\u00D740cm', badge: null },
+};
+
 function getFocusableElements(container) {
   if (!container) return [];
   return Array.from(
@@ -211,10 +218,13 @@ function renderSizeOptions() {
     const btn = document.createElement('div');
     btn.className = 'size-opt';
     btn.dataset.productId = product.id;
+    const meta = productMeta[product.id] || {};
+    const badge = meta.badge ? `<span class="size-opt-badge">${meta.badge}</span>` : '';
+    const artSize = meta.artSize ? ` &middot; <span class="size-opt-art">${meta.artSize}</span>` : '';
     btn.innerHTML = `
       <div class="size-opt-info">
-        <div class="size-opt-name">${product.name}</div>
-        <div class="size-opt-sub">${product.displaySize}</div>
+        <div class="size-opt-name-row"><div class="size-opt-name">${product.name}</div>${badge}</div>
+        <div class="size-opt-sub">${product.displaySize}${artSize}</div>
       </div>
       <div class="size-opt-price">${formatPriceFromAmount(product.unitAmount)}</div>
     `;
@@ -973,10 +983,13 @@ function renderCart() {
     if (Number.isFinite(p)) total += p;
     const itemEl = document.createElement('div');
     itemEl.className = 'cart-item';
+    const labelLine = item.customLabel
+      ? `<div class="cart-item-meta cart-item-custom-label">${item.customLabel}</div><div class="cart-item-geo">${item.location}</div>`
+      : `<div class="cart-item-meta">${item.location}</div>`;
     itemEl.innerHTML = `
       <div class="cart-item-preview" data-item-id="${item.id}"></div>
       <div class="cart-item-title">${item.name}</div>
-      <div class="cart-item-meta">${item.location}</div>
+      ${labelLine}
       <div class="cart-item-row">
         <div class="cart-item-price">${formatPrice(item.price)}</div>
         <button type="button" class="cart-item-remove" data-index="${idx}">Remove</button>
@@ -1014,6 +1027,7 @@ function addSelectionToCart() {
     aspectRatio: selectedProduct.aspectRatio,
     price: Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) / 100 : NaN,
     location: selectionMeta.locationText,
+    customLabel: (document.getElementById('custom-location-label')?.value || '').trim(),
     bbox: selectionMeta.bbox,
     center: selectionMeta.center,
   };
