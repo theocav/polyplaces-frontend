@@ -17,6 +17,7 @@ This repo is set up for two deployments:
 - The frontend can load runtime config from a root `.env` file. Run `npm run serve` to generate `assets/js/env.js` before serving.
 - Set `POLYPLACES_API_BASE_URL` to your backend URL, including your local ngrok URL during development.
 - If `.env` is missing, the frontend falls back to the `meta[name="api-base"]` tag.
+- If you deploy updated JS/CSS and changes don't show up, bump the `?v=...` cache-buster in `index.html` and `store/index.html` (Hostinger/LiteSpeed/CDN caching can otherwise serve stale assets).
 
 ## Backend (Node)
 
