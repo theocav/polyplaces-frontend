@@ -344,9 +344,19 @@ async function loadProducts() {
 async function initStore() {
   if (storeInited) return;
   storeInited = true;
+
+  const loadingEl = document.getElementById('store-size-loading');
+  const emptyEl = document.getElementById('size-options-empty');
+  if (loadingEl) loadingEl.hidden = false;
+  if (emptyEl) emptyEl.classList.add('hidden');
+
   await loadProducts();
+
+  if (loadingEl) loadingEl.hidden = true;
+
   initMap();
   initCustomSizePanel();
+  initMobileInputFix();
   if (selectedProduct) {
     // If the user selected a size before the map finished initializing, re-run selection to auto-place the frame.
     selectProduct(selectedProduct);
@@ -450,6 +460,8 @@ function setupMapSearch() {
       clearResults();
       return;
     }
+    button.disabled = true;
+    button.textContent = 'Searching\u2026';
     try {
       const url = new URL(NOMINATIM_SEARCH_URL);
       url.searchParams.set('format', 'jsonv2');
@@ -472,6 +484,9 @@ function setupMapSearch() {
       renderResults(results);
     } catch {
       renderResults([]);
+    } finally {
+      button.disabled = false;
+      button.textContent = 'Search';
     }
   };
 
@@ -976,8 +991,14 @@ async function reverseGeocode(center) {
     }
     const locationEl = document.getElementById('order-location');
     if (locationEl) {
-      locationEl.textContent = 'Location unavailable';
-      locationEl.classList.remove('pending');
+      locationEl.textContent = 'Couldn\u2019t detect \u2014 name it below';
+      locationEl.classList.add('pending');
+    }
+    // Gently draw attention to the label input so the user can name the location themselves.
+    const labelInput = document.getElementById('custom-location-label');
+    if (labelInput && !labelInput.value) {
+      labelInput.classList.add('geocode-nudge');
+      setTimeout(() => labelInput.classList.remove('geocode-nudge'), 2000);
     }
   }
 }
@@ -1206,6 +1227,36 @@ function initNavUI() {
   overlay.onclick = closeNav;
   drawer.addEventListener('click', (e) => {
     if (e.target.closest('a,button')) closeNav();
+  });
+
+  // Swipe left on the drawer to close it (mobile).
+  let _navSwipeStartX = 0;
+  drawer.addEventListener('touchstart', (e) => {
+    _navSwipeStartX = e.changedTouches[0].clientX;
+  }, { passive: true });
+  drawer.addEventListener('touchend', (e) => {
+    const dx = _navSwipeStartX - e.changedTouches[0].clientX;
+    if (dx > 48) closeNav();
+  }, { passive: true });
+}
+
+// On mobile, temporarily un-stick the order CTA while an input is focused
+// so the virtual keyboard doesn't obscure the Add to cart button.
+function initMobileInputFix() {
+  const orderCta = document.querySelector('.order-cta');
+  if (!orderCta) return;
+  const inputs = document.querySelectorAll('.config-right input, .config-right textarea');
+  inputs.forEach((input) => {
+    input.addEventListener('focus', () => {
+      orderCta.style.position = 'relative';
+      orderCta.style.bottom = 'auto';
+      orderCta.style.boxShadow = 'none';
+    });
+    input.addEventListener('blur', () => {
+      orderCta.style.position = '';
+      orderCta.style.bottom = '';
+      orderCta.style.boxShadow = '';
+    });
   });
 }
 
