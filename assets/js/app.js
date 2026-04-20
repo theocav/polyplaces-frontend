@@ -112,6 +112,17 @@ const productMeta = {
   quarter:       { artSize: '40\u00D740cm', badge: null },
 };
 
+// Frame add-on pricing — unit amounts in pence; priceIds populated from API if available.
+const FRAME_PRICE_FALLBACKS = {
+  neighbourhood: { unitAmount: 700,  priceId: 'fallback_frame_small' },
+  portrait:      { unitAmount: 1000, priceId: 'fallback_frame_a4'   },
+  quarter:       { unitAmount: 1300, priceId: 'fallback_frame_large' },
+};
+let framePrices = Object.fromEntries(
+  Object.entries(FRAME_PRICE_FALLBACKS).map(([k, v]) => [k, { ...v }])
+);
+let selectedFrame = 'none'; // 'none' | 'frame'
+
 // Custom size configuration. ratePerSqm can be overridden by the API response.
 const CUSTOM_SIZE_MIN_MM = 100;
 const CUSTOM_SIZE_MAX_MM = 330;
@@ -248,27 +259,70 @@ function renderSizeOptions() {
     const meta = productMeta[product.id] || {};
     const badge = meta.badge ? `<span class="size-opt-badge">${meta.badge}</span>` : '';
     const artSize = meta.artSize ? ` &middot; <span class="size-opt-art">${meta.artSize}</span>` : '';
-    btn.innerHTML = `
-      <div class="size-opt-info">
-        <div class="size-opt-name-row"><div class="size-opt-name">${product.name}</div>${badge}</div>
-        <div class="size-opt-sub">${product.displaySize}${artSize}</div>
+
+    const frameData = framePrices[product.id];
+    const baseAmount = product.unitAmount;
+    const frameOptsHtml = frameData ? `
+      <div class="frame-opts" hidden>
+        <div class="frame-opt">
+          <input type="radio" id="frame-none-${product.id}" name="frame-${product.id}" value="none" class="frame-radio" checked>
+          <label for="frame-none-${product.id}" class="frame-opt-label">
+            <span class="frame-opt-name">No frame</span>
+            <span class="frame-opt-price">${formatPriceFromAmount(baseAmount)}</span>
+          </label>
+        </div>
+        <div class="frame-opt">
+          <input type="radio" id="frame-yes-${product.id}" name="frame-${product.id}" value="frame" class="frame-radio">
+          <label for="frame-yes-${product.id}" class="frame-opt-label">
+            <span class="frame-opt-name">Add frame</span>
+            <span class="frame-opt-price is-addon">+${formatPriceFromAmount(frameData.unitAmount)}&ensp;&rarr;&ensp;${formatPriceFromAmount((baseAmount || 0) + frameData.unitAmount)}</span>
+          </label>
+        </div>
       </div>
-      <div class="size-opt-price">${formatPriceFromAmount(product.unitAmount)}</div>
+    ` : '';
+
+    btn.innerHTML = `
+      <div class="size-opt-top">
+        <div class="size-opt-info">
+          <div class="size-opt-name-row"><div class="size-opt-name">${product.name}</div>${badge}</div>
+          <div class="size-opt-sub">${product.displaySize}${artSize}</div>
+        </div>
+        <div class="size-opt-price">${formatPriceFromAmount(product.unitAmount)}</div>
+      </div>
+      ${frameOptsHtml}
     `;
-    btn.onclick = () => selectProduct(product);
+
+    btn.onclick = (e) => {
+      if (e.target.closest('.frame-opts')) return;
+      selectProduct(product);
+    };
+
+    if (frameData) {
+      btn.querySelectorAll('.frame-radio').forEach((radio) => {
+        radio.addEventListener('change', (e) => {
+          e.stopPropagation();
+          if (selectedProduct?.id === product.id) {
+            handleFrameChange(product, radio.value);
+          }
+        });
+      });
+    }
+
     container.appendChild(btn);
   });
 
-  // Custom size option — always appended last.
+  // Custom size option — always appended last; no frame option.
   const customBtn = document.createElement('div');
   customBtn.className = 'size-opt size-opt-custom';
   customBtn.dataset.productId = 'custom';
   customBtn.innerHTML = `
-    <div class="size-opt-info">
-      <div class="size-opt-name-row"><div class="size-opt-name">Custom</div></div>
-      <div class="size-opt-sub">Up to ${CUSTOM_SIZE_MAX_MM}\u00D7${CUSTOM_SIZE_MAX_MM}mm</div>
+    <div class="size-opt-top">
+      <div class="size-opt-info">
+        <div class="size-opt-name-row"><div class="size-opt-name">Custom</div></div>
+        <div class="size-opt-sub">Up to ${CUSTOM_SIZE_MAX_MM}\u00D7${CUSTOM_SIZE_MAX_MM}mm</div>
+      </div>
+      <div class="size-opt-price size-opt-price-custom">&darr; Set size</div>
     </div>
-    <div class="size-opt-price size-opt-price-custom">&darr; Set size</div>
   `;
   customBtn.onclick = () => activateCustomSize();
   container.appendChild(customBtn);
@@ -276,11 +330,42 @@ function renderSizeOptions() {
 
 function selectProduct(product) {
   if (!product) return;
+  const isNewProduct = !selectedProduct || selectedProduct.id !== product.id;
   const prevBBox = bbox ? { ...bbox } : null;
   const prevCenter = prevBBox
     ? { lat: (prevBBox.south + prevBBox.north) / 2, lng: (prevBBox.west + prevBBox.east) / 2 }
     : null;
   selectedProduct = product;
+
+  // Reset frame selection when switching to a different product.
+  if (isNewProduct) {
+    selectedFrame = 'none';
+    document.querySelectorAll('.frame-opts').forEach((el) => {
+      el.hidden = true;
+      const noneRadio = el.querySelector('.frame-radio[value="none"]');
+      if (noneRadio) noneRadio.checked = true;
+    });
+  }
+  // Reveal frame options for the newly selected product (not custom).
+  if (product.id !== 'custom' && framePrices[product.id]) {
+    const activeFrameOpts = document.querySelector(`.size-opt[data-product-id="${product.id}"] .frame-opts`);
+    if (activeFrameOpts) activeFrameOpts.hidden = false;
+  }
+
+  // Reset frame controls for the new product.
+  frameRotation = 0;
+  frameZoom = 1.0;
+  const rotBtn = document.getElementById('rotation-btn');
+  const zoomSlider = document.getElementById('zoom-slider');
+  const zoomVal = document.getElementById('zoom-val');
+  if (rotBtn) rotBtn.setAttribute('aria-pressed', 'false');
+  if (zoomSlider) zoomSlider.value = '1';
+  if (zoomVal) zoomVal.textContent = '1.0\u00D7';
+
+  // Disable rotate button for square products (no visual effect from rotating a square).
+  const isSquare = Math.abs((Number(product.aspectRatio) || 1) - 1) < 0.01;
+  if (rotBtn) rotBtn.disabled = isSquare;
+
   document.querySelectorAll('.size-opt').forEach((b) => b.classList.remove('active'));
   const activeBtn = document.querySelector(`.size-opt[data-product-id="${product.id}"]`);
   if (activeBtn) activeBtn.classList.add('active');
@@ -289,6 +374,14 @@ function selectProduct(product) {
   const customPanel = document.getElementById('custom-size-panel');
   if (customPanel) customPanel.hidden = product.id !== 'custom';
 
+  // Show or hide the frame line in the order summary.
+  const frameLine = document.getElementById('order-frame-line');
+  const frameVal = document.getElementById('order-frame');
+  if (frameLine) {
+    frameLine.hidden = product.id === 'custom' || !framePrices[product.id];
+    if (frameVal && isNewProduct) frameVal.textContent = 'No frame';
+  }
+
   if (layerGroup) layerGroup.clearLayers();
   resetReviewState();
 
@@ -296,7 +389,7 @@ function selectProduct(product) {
   document.getElementById('map-hint').textContent = 'Placing your frame…';
 
   document.getElementById('order-scale').textContent = `${product.name} \u00B7 ${product.displaySize}`;
-  document.getElementById('order-price').textContent = formatPriceFromAmount(product.unitAmount);
+  document.getElementById('order-price').textContent = formatPriceFromAmount(getEffectiveUnitAmount(product, selectedFrame));
 
   // Place (or morph) the frame immediately at the center of the current viewport.
   if (map && handleIcon) {
@@ -322,6 +415,22 @@ function selectProduct(product) {
   }
 }
 
+function getEffectiveUnitAmount(product, frameValue) {
+  if (!product) return null;
+  const amount = product.unitAmount != null ? Number(product.unitAmount) : null;
+  if (frameValue === 'frame' && amount != null && framePrices[product.id]) {
+    return amount + framePrices[product.id].unitAmount;
+  }
+  return amount;
+}
+
+function handleFrameChange(product, frameValue) {
+  selectedFrame = frameValue;
+  document.getElementById('order-price').textContent = formatPriceFromAmount(getEffectiveUnitAmount(product, frameValue));
+  const frameVal = document.getElementById('order-frame');
+  if (frameVal) frameVal.textContent = frameValue === 'frame' ? 'Included' : 'No frame';
+}
+
 async function loadProducts() {
   try {
     const res = await fetch(`${apiBase}/api/products`);
@@ -331,6 +440,14 @@ async function loadProducts() {
     if (products.length === 0) products = sanitizeProductList(fallbackProducts.slice());
     if (Number.isFinite(Number(data?.customSizePricePerSqm)) && Number(data.customSizePricePerSqm) > 0) {
       customSizeRatePerSqm = Number(data.customSizePricePerSqm);
+    }
+    // Merge frame prices from API (overrides fallbacks when real Stripe price IDs are provided).
+    if (data?.framePrices && typeof data.framePrices === 'object') {
+      Object.entries(data.framePrices).forEach(([productId, frameData]) => {
+        if (framePrices[productId] && frameData?.priceId && typeof frameData.unitAmount === 'number') {
+          framePrices[productId] = { priceId: frameData.priceId, unitAmount: frameData.unitAmount };
+        }
+      });
     }
     renderSizeOptions();
     return products;
@@ -356,6 +473,7 @@ async function initStore() {
 
   initMap();
   initCustomSizePanel();
+  initFrameControls();
   initMobileInputFix();
   if (selectedProduct) {
     // If the user selected a size before the map finished initializing, re-run selection to auto-place the frame.
@@ -557,6 +675,10 @@ let cart = [];
 let reverseGeocodeTimer = null;
 let lastReverseStamp = 0;
 let cartPreviewMaps = new Map();
+let frameRotation = 0;   // degrees 0-359
+let frameZoom = 1.0;     // 0.7-1.3 geographic scale factor
+let frameCenter = null;  // { lat, lng } actual center of the frame
+let frameCorners = null; // [[lat,lng]×4] rotated corners currently drawn
 
 function initMap() {
   const ukBounds = L.latLngBounds([49.8, -8.7], [60.9, 1.9]);
@@ -788,6 +910,64 @@ function computeBBoxForProduct(c, product) {
   return { south: c.lat - dLat, north: c.lat + dLat, west: c.lng - dLon, east: c.lng + dLon };
 }
 
+// Compute 4 rotated corners (lat/lng) of the frame for a given center, product, rotation and zoom.
+// Corners are returned in order: top-left, top-right, bottom-right, bottom-left (rotated).
+function computeRotatedCorners(center, product, rotationDeg, zoom) {
+  if (!product || !center) return null;
+  const width = Number(product.sizeCode) * (zoom || 1);
+  if (!Number.isFinite(width) || width <= 0) return null;
+  const ratio = Number(product.aspectRatio);
+  const ar = Number.isFinite(ratio) && ratio > 0 ? ratio : 1;
+  const w = width;       // east-west meters
+  const h = width * ar;  // north-south meters
+
+  const rad = (rotationDeg * Math.PI) / 180;
+  const cosR = Math.cos(rad);
+  const sinR = Math.sin(rad);
+
+  // Local corners relative to center (x = east m, y = north m):
+  const local = [
+    { x: -w / 2, y:  h / 2 },  // top-left
+    { x:  w / 2, y:  h / 2 },  // top-right
+    { x:  w / 2, y: -h / 2 },  // bottom-right
+    { x: -w / 2, y: -h / 2 },  // bottom-left
+  ];
+
+  return local.map(({ x, y }) => {
+    const rx = x * cosR - y * sinR;  // rotated east offset
+    const ry = x * sinR + y * cosR;  // rotated north offset
+    return [
+      center.lat + mToLat(ry),
+      center.lng + mToLon(rx, center.lat),
+    ];
+  });
+}
+
+// Axis-aligned bounding box that encloses all polygon corners.
+function cornersToBBox(corners) {
+  const lats = corners.map((c) => c[0]);
+  const lngs = corners.map((c) => c[1]);
+  return {
+    south: Math.min(...lats),
+    north: Math.max(...lats),
+    west:  Math.min(...lngs),
+    east:  Math.max(...lngs),
+  };
+}
+
+// Return the index of the visually top-left (north-west) corner of a rotated polygon.
+// Picks the corner with the highest latitude; ties broken by lowest longitude.
+function findTopLeftCorner(corners) {
+  let best = 0;
+  for (let i = 1; i < corners.length; i++) {
+    const [clat, clng] = corners[i];
+    const [blat, blng] = corners[best];
+    if (clat > blat + 1e-10) { best = i; continue; }
+    if (Math.abs(clat - blat) < 1e-10 && clng < blng) { best = i; }
+  }
+  return best;
+}
+
 function lerp(a, b, t) {
   return a + (b - a) * t;
 }
@@ -798,15 +978,21 @@ function easeInOutCubic(t) {
 
 function setBBoxLive(next) {
   bbox = next;
+  // During animation frameRotation is always 0, so corners == axis-aligned bbox corners.
+  frameCenter = {
+    lat: (next.south + next.north) / 2,
+    lng: (next.west + next.east) / 2,
+  };
+  frameCorners = [
+    [next.north, next.west],
+    [next.north, next.east],
+    [next.south, next.east],
+    [next.south, next.west],
+  ];
   if (bboxLayer) {
-    bboxLayer.setLatLngs([
-      [bbox.south, bbox.west],
-      [bbox.south, bbox.east],
-      [bbox.north, bbox.east],
-      [bbox.north, bbox.west],
-    ]);
+    bboxLayer.setLatLngs(frameCorners);
   }
-  if (handle) handle.setLatLng([bbox.north, bbox.west]);
+  if (handle) handle.setLatLng(frameCorners[0]);
 }
 
 let bboxAnim = null;
@@ -845,31 +1031,39 @@ function animateBBoxTo(targetBBox, durationMs = 420) {
 }
 
 function createBBox(c, icon) {
-  bbox = computeBBox(c);
-  if (!bbox) return;
-  drawBBox(icon);
+  frameCenter = { lat: c.lat, lng: c.lng };
+  if (icon) handleIcon = icon;
+  redrawFrame();
   updateLocationDisplay();
 }
 
-function drawBBox(icon) {
-  if (!bbox) return;
-  const coords = [
-    [bbox.south, bbox.west],
-    [bbox.south, bbox.east],
-    [bbox.north, bbox.east],
-    [bbox.north, bbox.west],
-  ];
-  if (bboxLayer) map.removeLayer(bboxLayer);
-  bboxLayer = L.polygon(coords, {
-    color: '#c94f2c',
-    weight: 2,
-    fillColor: '#c94f2c',
-    fillOpacity: 0.05,
-    dashArray: '6 4',
-  }).addTo(map);
-  const h = [bbox.north, bbox.west];
-  if (!handle) {
-    handle = L.marker(h, { draggable: true, icon }).addTo(map);
+// Single function that (re)draws the polygon and handle from current frame state.
+function redrawFrame() {
+  if (!frameCenter || !selectedProduct || !map || !handleIcon) return;
+
+  const corners = computeRotatedCorners(frameCenter, selectedProduct, frameRotation, frameZoom);
+  if (!corners) return;
+
+  frameCorners = corners;
+  bbox = cornersToBBox(corners);
+
+  if (bboxLayer) {
+    bboxLayer.setLatLngs(corners);
+  } else {
+    bboxLayer = L.polygon(corners, {
+      color: '#c94f2c',
+      weight: 2,
+      fillColor: '#c94f2c',
+      fillOpacity: 0.05,
+      dashArray: '6 4',
+    }).addTo(map);
+  }
+
+  const handlePos = corners[findTopLeftCorner(corners)]; // visual top-left (NW)
+  if (handle) {
+    handle.setLatLng(handlePos);
+  } else {
+    handle = L.marker(handlePos, { draggable: true, icon: handleIcon }).addTo(map);
     handle.on('dragstart', () => {
       resetReviewState();
     });
@@ -880,24 +1074,20 @@ function drawBBox(icon) {
     handle.on('dragend', (e) => {
       moveFromHandle(e.target.getLatLng(), true);
     });
-  } else {
-    handle.setLatLng(h);
   }
+
+  const frameControlsEl = document.getElementById('frame-controls');
+  if (frameControlsEl) frameControlsEl.hidden = false;
 }
 
-function moveFromHandle(ll, updateLocation = true) {
-  const w = bbox.east - bbox.west;
-  const h = bbox.north - bbox.south;
-  bbox = { south: ll.lat - h, north: ll.lat, west: ll.lng, east: ll.lng + w };
-  if (bboxLayer) {
-    bboxLayer.setLatLngs([
-      [bbox.south, bbox.west],
-      [bbox.south, bbox.east],
-      [bbox.north, bbox.east],
-      [bbox.north, bbox.west],
-    ]);
-  }
-  if (handle) handle.setLatLng([bbox.north, bbox.west]);
+function moveFromHandle(newHandleLl, updateLocation = true) {
+  if (!frameCenter || !frameCorners) return;
+  // Shift the center by the same delta the visual top-left corner moved.
+  const oldHandle = frameCorners[findTopLeftCorner(frameCorners)];
+  const deltaLat = newHandleLl.lat - oldHandle[0];
+  const deltaLng = newHandleLl.lng - oldHandle[1];
+  frameCenter = { lat: frameCenter.lat + deltaLat, lng: frameCenter.lng + deltaLng };
+  redrawFrame();
   if (updateLocation) updateLocationDisplay();
 }
 
@@ -913,7 +1103,22 @@ function clearFrame() {
     handle = null;
   }
   bbox = null;
+  frameCenter = null;
+  frameCorners = null;
+  frameRotation = 0;
+  frameZoom = 1.0;
   selectionMeta = null;
+  selectedFrame = 'none';
+  const _frameLine = document.getElementById('order-frame-line');
+  if (_frameLine) _frameLine.hidden = true;
+  const rotBtn = document.getElementById('rotation-btn');
+  const zoomSlider = document.getElementById('zoom-slider');
+  if (rotBtn) rotBtn.setAttribute('aria-pressed', 'false');
+  if (zoomSlider) zoomSlider.value = '1';
+  const zoomVal = document.getElementById('zoom-val');
+  if (zoomVal) zoomVal.textContent = '1.0\u00D7';
+  const frameControlsEl = document.getElementById('frame-controls');
+  if (frameControlsEl) frameControlsEl.hidden = true;
   document.getElementById('sel-run').disabled = true;
   document.getElementById('sel-run').textContent = 'Add to cart \u2192';
   document.getElementById('order-location').textContent = 'Select on map';
@@ -948,6 +1153,8 @@ function updateLocationDisplay() {
   selectionMeta = {
     center,
     bbox,
+    rotation: frameRotation,
+    zoom: frameZoom,
     locationText,
   };
   const locationEl = document.getElementById('order-location');
@@ -1056,9 +1263,11 @@ function renderCart() {
     const labelLine = item.customLabel
       ? `<div class="cart-item-meta cart-item-custom-label">${item.customLabel}</div><div class="cart-item-geo">${item.location}</div>`
       : `<div class="cart-item-meta">${item.location}</div>`;
+    const frameLine = item.frame ? `<div class="cart-item-frame">With frame</div>` : '';
     itemEl.innerHTML = `
       <div class="cart-item-preview" data-item-id="${item.id}"></div>
       <div class="cart-item-title">${item.name}</div>
+      ${frameLine}
       ${labelLine}
       <div class="cart-item-row">
         <div class="cart-item-price">${formatPrice(item.price)}</div>
@@ -1087,6 +1296,12 @@ function addSelectionToCart() {
     typeof crypto !== 'undefined' && crypto.randomUUID
       ? crypto.randomUUID()
       : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  const hasFrame = selectedFrame === 'frame' && selectedProduct.id !== 'custom' && !!framePrices[selectedProduct.id];
+  const frameData = hasFrame ? framePrices[selectedProduct.id] : null;
+  const frameUnitAmount = frameData?.unitAmount || 0;
+  const baseUnitAmount = Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) : 0;
+
   const item = {
     id,
     productId: selectedProduct.id,
@@ -1095,11 +1310,16 @@ function addSelectionToCart() {
     displaySize: selectedProduct.displaySize,
     sizeCode: selectedProduct.sizeCode,
     aspectRatio: selectedProduct.aspectRatio,
-    price: Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) / 100 : NaN,
+    price: (baseUnitAmount + frameUnitAmount) / 100,
     location: selectionMeta.locationText,
     customLabel: (document.getElementById('custom-location-label')?.value || '').trim(),
     bbox: selectionMeta.bbox,
     center: selectionMeta.center,
+    rotation: selectionMeta.rotation || 0,
+    zoom: selectionMeta.zoom || 1,
+    frame: hasFrame,
+    framePriceId: frameData?.priceId || null,
+    frameUnitAmount,
     ...(selectedProduct.id === 'custom' && {
       customWidthMm: selectedProduct.customWidthMm,
       customHeightMm: selectedProduct.customHeightMm,
@@ -1152,7 +1372,10 @@ function closeCart() {
 
 async function checkoutCart() {
   if (cart.length === 0) return;
-  if (cart.some((i) => String(i?.priceId || '').startsWith('fallback_'))) {
+  if (
+    cart.some((i) => String(i?.priceId || '').startsWith('fallback_')) ||
+    cart.some((i) => i.frame && String(i?.framePriceId || '').startsWith('fallback_'))
+  ) {
     showBanner('Checkout is temporarily unavailable. Please try again shortly.', 'fail');
     return;
   }
@@ -1163,7 +1386,12 @@ async function checkoutCart() {
     const res = await fetch(`${apiBase}/api/checkout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: cart }),
+      body: JSON.stringify({
+        items: cart.map((item) => ({
+          ...item,
+          ...(item.frame && item.framePriceId ? { framePriceId: item.framePriceId } : {}),
+        })),
+      }),
     });
     const data = await res.json();
     if (!res.ok || !data.url) throw new Error(data.error || 'Checkout failed');
@@ -1340,6 +1568,41 @@ function initCustomSizePanel() {
 }
 
 // ── End custom size ────────────────────────────────────────────────────────────
+
+// ── Frame controls (rotation + zoom sliders) ───────────────────────────────────
+
+function initFrameControls() {
+  const rotBtn = document.getElementById('rotation-btn');
+  const zoomSlider = document.getElementById('zoom-slider');
+  const zoomVal = document.getElementById('zoom-val');
+
+  if (rotBtn) {
+    rotBtn.addEventListener('click', () => {
+      const isRotated = rotBtn.getAttribute('aria-pressed') === 'true';
+      frameRotation = isRotated ? 0 : 90;
+      rotBtn.setAttribute('aria-pressed', isRotated ? 'false' : 'true');
+      if (frameCenter && selectedProduct) {
+        resetReviewState();
+        redrawFrame();
+        updateLocationDisplay();
+      }
+    });
+  }
+
+  if (zoomSlider) {
+    zoomSlider.addEventListener('input', () => {
+      frameZoom = Number(zoomSlider.value);
+      if (zoomVal) zoomVal.textContent = `${frameZoom.toFixed(1)}\u00D7`;
+      if (frameCenter && selectedProduct) {
+        resetReviewState();
+        redrawFrame();
+        updateLocationDisplay();
+      }
+    });
+  }
+}
+
+// ── End frame controls ─────────────────────────────────────────────────────────
 
 initCartUI();
 initNavUI();
