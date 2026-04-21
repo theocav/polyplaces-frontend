@@ -112,16 +112,17 @@ const productMeta = {
   quarter:       { artSize: '40\u00D740cm', badge: null },
 };
 
-// Frame add-on pricing — unit amounts in pence; priceIds populated from API if available.
-const FRAME_PRICE_FALLBACKS = {
-  neighbourhood: { unitAmount: 700,  priceId: 'fallback_frame_small' },
-  portrait:      { unitAmount: 1000, priceId: 'fallback_frame_a4'   },
-  quarter:       { unitAmount: 1300, priceId: 'fallback_frame_large' },
+// Frame add-on options keyed by sculpture product ID.
+// Each entry is an array of frame choices (with color + name metadata); populated from API when available.
+const FRAME_OPTIONS_FALLBACKS = {
+  neighbourhood: [{ unitAmount: 700,  priceId: 'fallback_frame_small', name: 'Frame', color: '#a07840' }],
+  portrait:      [{ unitAmount: 1000, priceId: 'fallback_frame_a4',   name: 'Frame', color: '#a07840' }],
+  quarter:       [{ unitAmount: 1300, priceId: 'fallback_frame_large', name: 'Frame', color: '#a07840' }],
 };
-let framePrices = Object.fromEntries(
-  Object.entries(FRAME_PRICE_FALLBACKS).map(([k, v]) => [k, { ...v }])
+let frameOptions = Object.fromEntries(
+  Object.entries(FRAME_OPTIONS_FALLBACKS).map(([k, v]) => [k, v.map(f => ({ ...f }))])
 );
-let selectedFrame = 'none'; // 'none' | 'frame'
+let selectedFrame = 'none'; // 'none' | priceId of the selected frame
 
 // Custom size configuration. ratePerSqm can be overridden by the API response.
 const CUSTOM_SIZE_MIN_MM = 100;
@@ -260,24 +261,29 @@ function renderSizeOptions() {
     const badge = meta.badge ? `<span class="size-opt-badge">${meta.badge}</span>` : '';
     const artSize = meta.artSize ? ` &middot; <span class="size-opt-art">${meta.artSize}</span>` : '';
 
-    const frameData = framePrices[product.id];
-    const baseAmount = product.unitAmount;
-    const frameOptsHtml = frameData ? `
+    const frames = frameOptions[product.id] || [];
+    const frameOptsHtml = frames.length > 0 ? `
       <div class="frame-opts" hidden>
-        <div class="frame-opt">
-          <input type="radio" id="frame-none-${product.id}" name="frame-${product.id}" value="none" class="frame-radio" checked>
-          <label for="frame-none-${product.id}" class="frame-opt-label">
-            <span class="frame-opt-name">No frame</span>
-            <span class="frame-opt-price">${formatPriceFromAmount(baseAmount)}</span>
-          </label>
+        <div class="frame-opts-header">Frame choice</div>
+        <div class="frame-boxes">
+          <div class="frame-box">
+            <input type="radio" id="frame-none-${product.id}" name="frame-${product.id}" value="none" class="frame-radio" checked>
+            <label for="frame-none-${product.id}" class="frame-box-label">
+              <span class="frame-box-swatch frame-box-none"></span>
+              <span class="frame-box-price">&ndash;</span>
+            </label>
+          </div>
+          ${frames.map(frame => `
+            <div class="frame-box">
+              <input type="radio" id="frame-${frame.priceId}-${product.id}" name="frame-${product.id}" value="${frame.priceId}" class="frame-radio">
+              <label for="frame-${frame.priceId}-${product.id}" class="frame-box-label">
+                <span class="frame-box-swatch" style="background:${frame.color}"></span>
+                <span class="frame-box-price">+${formatPriceFromAmount(frame.unitAmount)}</span>
+              </label>
+            </div>
+          `).join('')}
         </div>
-        <div class="frame-opt">
-          <input type="radio" id="frame-yes-${product.id}" name="frame-${product.id}" value="frame" class="frame-radio">
-          <label for="frame-yes-${product.id}" class="frame-opt-label">
-            <span class="frame-opt-name">Add frame</span>
-            <span class="frame-opt-price is-addon">+${formatPriceFromAmount(frameData.unitAmount)}&ensp;&rarr;&ensp;${formatPriceFromAmount((baseAmount || 0) + frameData.unitAmount)}</span>
-          </label>
-        </div>
+        <div class="frame-selected-name">No frame</div>
       </div>
     ` : '';
 
@@ -297,7 +303,7 @@ function renderSizeOptions() {
       selectProduct(product);
     };
 
-    if (frameData) {
+    if (frames.length > 0) {
       btn.querySelectorAll('.frame-radio').forEach((radio) => {
         radio.addEventListener('change', (e) => {
           e.stopPropagation();
@@ -344,10 +350,12 @@ function selectProduct(product) {
       el.hidden = true;
       const noneRadio = el.querySelector('.frame-radio[value="none"]');
       if (noneRadio) noneRadio.checked = true;
+      const nameEl = el.querySelector('.frame-selected-name');
+      if (nameEl) nameEl.textContent = 'No frame';
     });
   }
   // Reveal frame options for the newly selected product (not custom).
-  if (product.id !== 'custom' && framePrices[product.id]) {
+  if (product.id !== 'custom' && (frameOptions[product.id]?.length > 0)) {
     const activeFrameOpts = document.querySelector(`.size-opt[data-product-id="${product.id}"] .frame-opts`);
     if (activeFrameOpts) activeFrameOpts.hidden = false;
   }
@@ -362,9 +370,9 @@ function selectProduct(product) {
   if (zoomSlider) zoomSlider.value = '1';
   if (zoomVal) zoomVal.textContent = '1.0\u00D7';
 
-  // Disable rotate button for square products (no visual effect from rotating a square).
+  // Disable rotate button for square products and custom sizes.
   const isSquare = Math.abs((Number(product.aspectRatio) || 1) - 1) < 0.01;
-  if (rotBtn) rotBtn.disabled = isSquare;
+  if (rotBtn) rotBtn.disabled = isSquare || product.id === 'custom';
 
   document.querySelectorAll('.size-opt').forEach((b) => b.classList.remove('active'));
   const activeBtn = document.querySelector(`.size-opt[data-product-id="${product.id}"]`);
@@ -378,7 +386,7 @@ function selectProduct(product) {
   const frameLine = document.getElementById('order-frame-line');
   const frameVal = document.getElementById('order-frame');
   if (frameLine) {
-    frameLine.hidden = product.id === 'custom' || !framePrices[product.id];
+    frameLine.hidden = product.id === 'custom' || !(frameOptions[product.id]?.length > 0);
     if (frameVal && isNewProduct) frameVal.textContent = 'No frame';
   }
 
@@ -418,8 +426,10 @@ function selectProduct(product) {
 function getEffectiveUnitAmount(product, frameValue) {
   if (!product) return null;
   const amount = product.unitAmount != null ? Number(product.unitAmount) : null;
-  if (frameValue === 'frame' && amount != null && framePrices[product.id]) {
-    return amount + framePrices[product.id].unitAmount;
+  if (frameValue !== 'none' && amount != null) {
+    const frames = frameOptions[product.id] || [];
+    const frame = frames.find(f => f.priceId === frameValue);
+    if (frame) return amount + frame.unitAmount;
   }
   return amount;
 }
@@ -427,8 +437,14 @@ function getEffectiveUnitAmount(product, frameValue) {
 function handleFrameChange(product, frameValue) {
   selectedFrame = frameValue;
   document.getElementById('order-price').textContent = formatPriceFromAmount(getEffectiveUnitAmount(product, frameValue));
+  const frames = frameOptions[product.id] || [];
+  const frame = frameValue !== 'none' ? frames.find(f => f.priceId === frameValue) : null;
+  const frameName = frame ? frame.name : 'No frame';
   const frameVal = document.getElementById('order-frame');
-  if (frameVal) frameVal.textContent = frameValue === 'frame' ? 'Included' : 'No frame';
+  if (frameVal) frameVal.textContent = frame ? 'Included' : 'No frame';
+  // Update the selected name label inside the size card.
+  const nameEl = document.querySelector(`.size-opt[data-product-id="${product.id}"] .frame-selected-name`);
+  if (nameEl) nameEl.textContent = frameName;
 }
 
 async function loadProducts() {
@@ -441,11 +457,26 @@ async function loadProducts() {
     if (Number.isFinite(Number(data?.customSizePricePerSqm)) && Number(data.customSizePricePerSqm) > 0) {
       customSizeRatePerSqm = Number(data.customSizePricePerSqm);
     }
-    // Merge frame prices from API (overrides fallbacks when real Stripe price IDs are provided).
-    if (data?.framePrices && typeof data.framePrices === 'object') {
+    // Merge frame options from API.
+    // Supports new frameOptions format (array per product with color+name) and the legacy framePrices format.
+    if (data?.frameOptions && typeof data.frameOptions === 'object') {
+      Object.entries(data.frameOptions).forEach(([productId, frames]) => {
+        if (Array.isArray(frames) && frames.length > 0) {
+          const valid = frames.filter(f => f?.priceId && typeof f.unitAmount === 'number');
+          if (valid.length > 0) frameOptions[productId] = valid;
+        }
+      });
+    } else if (data?.framePrices && typeof data.framePrices === 'object') {
+      // Backward compat: convert legacy single-frame format to array format.
       Object.entries(data.framePrices).forEach(([productId, frameData]) => {
-        if (framePrices[productId] && frameData?.priceId && typeof frameData.unitAmount === 'number') {
-          framePrices[productId] = { priceId: frameData.priceId, unitAmount: frameData.unitAmount };
+        if (frameData?.priceId && typeof frameData.unitAmount === 'number') {
+          const existing = frameOptions[productId] || [];
+          frameOptions[productId] = [{
+            priceId: frameData.priceId,
+            unitAmount: frameData.unitAmount,
+            name: existing[0]?.name || 'Frame',
+            color: existing[0]?.color || '#a07840',
+          }];
         }
       });
     }
@@ -1263,7 +1294,7 @@ function renderCart() {
     const labelLine = item.customLabel
       ? `<div class="cart-item-meta cart-item-custom-label">${item.customLabel}</div><div class="cart-item-geo">${item.location}</div>`
       : `<div class="cart-item-meta">${item.location}</div>`;
-    const frameLine = item.frame ? `<div class="cart-item-frame">With frame</div>` : '';
+    const frameLine = item.frame ? `<div class="cart-item-frame">${item.frameName || 'With frame'}</div>` : '';
     itemEl.innerHTML = `
       <div class="cart-item-preview" data-item-id="${item.id}"></div>
       <div class="cart-item-title">${item.name}</div>
@@ -1297,9 +1328,10 @@ function addSelectionToCart() {
       ? crypto.randomUUID()
       : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  const hasFrame = selectedFrame === 'frame' && selectedProduct.id !== 'custom' && !!framePrices[selectedProduct.id];
-  const frameData = hasFrame ? framePrices[selectedProduct.id] : null;
-  const frameUnitAmount = frameData?.unitAmount || 0;
+  const frames = frameOptions[selectedProduct.id] || [];
+  const selectedFrameData = selectedFrame !== 'none' ? frames.find(f => f.priceId === selectedFrame) : null;
+  const hasFrame = !!selectedFrameData && selectedProduct.id !== 'custom';
+  const frameUnitAmount = hasFrame ? selectedFrameData.unitAmount : 0;
   const baseUnitAmount = Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) : 0;
 
   const item = {
@@ -1318,8 +1350,9 @@ function addSelectionToCart() {
     rotation: selectionMeta.rotation || 0,
     zoom: selectionMeta.zoom || 1,
     frame: hasFrame,
-    framePriceId: frameData?.priceId || null,
+    framePriceId: hasFrame ? selectedFrameData.priceId : null,
     frameUnitAmount,
+    frameName: hasFrame ? selectedFrameData.name : null,
     ...(selectedProduct.id === 'custom' && {
       customWidthMm: selectedProduct.customWidthMm,
       customHeightMm: selectedProduct.customHeightMm,
