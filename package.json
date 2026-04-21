@@ -2,7 +2,8 @@
   "name": "polyplaces-frontend",
   "private": true,
   "scripts": {
-    "preserve": "node scripts/generate-env.js",
+    "bust": "node scripts/bust-cache.js",
+    "preserve": "node scripts/generate-env.js && node scripts/bust-cache.js",
     "serve": "serve -l 3000 ."
   },
   "devDependencies": {
