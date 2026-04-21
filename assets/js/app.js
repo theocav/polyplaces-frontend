@@ -113,17 +113,26 @@ const productMeta = {
   quarter:       { artSize: '40\u00D740cm', badge: null },
 };
 
-// Frame add-on options keyed by sculpture product ID.
-// Each entry is an array of frame choices (with color + name metadata); populated from API when available.
+// Frame add-on options keyed by frameKey (small, medium, large, etc.).
+// Each entry is an array of frame choices with colour metadata; populated from API when available.
 const FRAME_OPTIONS_FALLBACKS = {
-  neighbourhood: [{ unitAmount: 700,  priceId: 'fallback_frame_small', name: 'Frame', color: '#a07840' }],
-  portrait:      [{ unitAmount: 1000, priceId: 'fallback_frame_a4',   name: 'Frame', color: '#a07840' }],
-  quarter:       [{ unitAmount: 1300, priceId: 'fallback_frame_large', name: 'Frame', color: '#a07840' }],
+  small: [
+    { unitAmount: 700,  priceId: 'fallback_frame_small_black', colourHex: '#000000', colourName: 'Black' },
+    { unitAmount: 800,  priceId: 'fallback_frame_small_oak',   colourHex: '#a07840', colourName: 'Oak' }
+  ],
+  medium: [
+    { unitAmount: 1000, priceId: 'fallback_frame_medium_black', colourHex: '#000000', colourName: 'Black' },
+    { unitAmount: 1100, priceId: 'fallback_frame_medium_oak',   colourHex: '#a07840', colourName: 'Oak' }
+  ],
+  large: [
+    { unitAmount: 1300, priceId: 'fallback_frame_large_black',  colourHex: '#000000', colourName: 'Black' },
+    { unitAmount: 1400, priceId: 'fallback_frame_large_oak',    colourHex: '#a07840', colourName: 'Oak' }
+  ],
 };
 let frameOptions = Object.fromEntries(
   Object.entries(FRAME_OPTIONS_FALLBACKS).map(([k, v]) => [k, v.map(f => ({ ...f }))])
 );
-let selectedFrame = 'none'; // 'none' | priceId of the selected frame
+let selectedFrame = null; // null | priceId of the selected frame (null = no frame selected)
 
 // Custom size configuration. ratePerSqm can be overridden by the API response.
 const CUSTOM_SIZE_MIN_MM = 100;
@@ -262,29 +271,30 @@ function renderSizeOptions() {
     const badge = meta.badge ? `<span class="size-opt-badge">${meta.badge}</span>` : '';
     const artSize = meta.artSize ? ` &middot; <span class="size-opt-art">${meta.artSize}</span>` : '';
 
-    const frames = frameOptions[product.id] || [];
+    const frames = frameOptions[product.frameKey] || [];
     const frameOptsHtml = frames.length > 0 ? `
       <div class="frame-opts" hidden>
-        <div class="frame-opts-header">Frame choice</div>
-        <div class="frame-boxes">
-          <div class="frame-box">
-            <input type="radio" id="frame-none-${product.id}" name="frame-${product.id}" value="none" class="frame-radio" checked>
-            <label for="frame-none-${product.id}" class="frame-box-label">
-              <span class="frame-box-swatch frame-box-none"></span>
-              <span class="frame-box-price">&ndash;</span>
-            </label>
-          </div>
-          ${frames.map(frame => `
-            <div class="frame-box">
-              <input type="radio" id="frame-${frame.priceId}-${product.id}" name="frame-${product.id}" value="${frame.priceId}" class="frame-radio">
-              <label for="frame-${frame.priceId}-${product.id}" class="frame-box-label">
-                <span class="frame-box-swatch" style="background:${frame.color}"></span>
-                <span class="frame-box-price">+${formatPriceFromAmount(frame.unitAmount)}</span>
-              </label>
-            </div>
-          `).join('')}
+        <div class="frame-opts-header">
+          <label class="frame-toggle-label">
+            <input type="checkbox" class="frame-toggle" data-product-id="${product.id}" />
+            <span>Add frame</span>
+          </label>
         </div>
-        <div class="frame-selected-name">No frame</div>
+        <div class="frame-colour-selector" hidden>
+          <div class="frame-colours-header">Select colour</div>
+          <div class="frame-colour-boxes">
+            ${frames.map(frame => `
+              <div class="frame-colour-box">
+                <input type="radio" id="frame-colour-${frame.priceId}-${product.id}" name="frame-colour-${product.id}" value="${frame.priceId}" class="frame-colour-radio">
+                <label for="frame-colour-${frame.priceId}-${product.id}" class="frame-colour-label">
+                  <span class="frame-colour-swatch" style="background:${frame.colourHex}" title="${frame.colourName}"></span>
+                  <span class="frame-colour-name">${frame.colourName}</span>
+                  <span class="frame-colour-price">+${formatPriceFromAmount(frame.unitAmount)}</span>
+                </label>
+              </div>
+            `).join('')}
+          </div>
+        </div>
       </div>
     ` : '';
 
@@ -305,11 +315,33 @@ function renderSizeOptions() {
     };
 
     if (frames.length > 0) {
-      btn.querySelectorAll('.frame-radio').forEach((radio) => {
+      const frameToggle = btn.querySelector('.frame-toggle');
+      const colourSelector = btn.querySelector('.frame-colour-selector');
+      const colourRadios = btn.querySelectorAll('.frame-colour-radio');
+
+      if (frameToggle) {
+        frameToggle.addEventListener('change', (e) => {
+          e.stopPropagation();
+          if (colourSelector) {
+            colourSelector.hidden = !e.target.checked;
+            // Auto-select first colour if enabling
+            if (e.target.checked && colourRadios.length > 0 && !colourRadios[0].checked) {
+              colourRadios[0].checked = true;
+              if (selectedProduct?.id === product.id) {
+                handleFrameChange(product, colourRadios[0].value, true);
+              }
+            } else if (!e.target.checked && selectedProduct?.id === product.id) {
+              handleFrameChange(product, null, false);
+            }
+          }
+        });
+      }
+
+      colourRadios.forEach((radio) => {
         radio.addEventListener('change', (e) => {
           e.stopPropagation();
-          if (selectedProduct?.id === product.id) {
-            handleFrameChange(product, radio.value);
+          if (selectedProduct?.id === product.id && frameToggle?.checked) {
+            handleFrameChange(product, radio.value, true);
           }
         });
       });
@@ -346,17 +378,17 @@ function selectProduct(product) {
 
   // Reset frame selection when switching to a different product.
   if (isNewProduct) {
-    selectedFrame = 'none';
+    selectedFrame = null;
     document.querySelectorAll('.frame-opts').forEach((el) => {
       el.hidden = true;
-      const noneRadio = el.querySelector('.frame-radio[value="none"]');
-      if (noneRadio) noneRadio.checked = true;
-      const nameEl = el.querySelector('.frame-selected-name');
-      if (nameEl) nameEl.textContent = 'No frame';
+      const toggle = el.querySelector('.frame-toggle');
+      const selector = el.querySelector('.frame-colour-selector');
+      if (toggle) toggle.checked = false;
+      if (selector) selector.hidden = true;
     });
   }
   // Reveal frame options for the newly selected product (not custom).
-  if (product.id !== 'custom' && (frameOptions[product.id]?.length > 0)) {
+  if (product.id !== 'custom' && (frameOptions[product.frameKey]?.length > 0)) {
     const activeFrameOpts = document.querySelector(`.size-opt[data-product-id="${product.id}"] .frame-opts`);
     if (activeFrameOpts) activeFrameOpts.hidden = false;
   }
@@ -387,7 +419,7 @@ function selectProduct(product) {
   const frameLine = document.getElementById('order-frame-line');
   const frameVal = document.getElementById('order-frame');
   if (frameLine) {
-    frameLine.hidden = product.id === 'custom' || !(frameOptions[product.id]?.length > 0);
+    frameLine.hidden = product.id === 'custom' || !(frameOptions[product.frameKey]?.length > 0);
     if (frameVal && isNewProduct) frameVal.textContent = 'No frame';
   }
 
@@ -427,25 +459,23 @@ function selectProduct(product) {
 function getEffectiveUnitAmount(product, frameValue) {
   if (!product) return null;
   const amount = product.unitAmount != null ? Number(product.unitAmount) : null;
-  if (frameValue !== 'none' && amount != null) {
-    const frames = frameOptions[product.id] || [];
+  if (frameValue && amount != null) {
+    const frames = frameOptions[product.frameKey] || [];
     const frame = frames.find(f => f.priceId === frameValue);
     if (frame) return amount + frame.unitAmount;
   }
   return amount;
 }
 
-function handleFrameChange(product, frameValue) {
+function handleFrameChange(product, frameValue, isEnabled) {
   selectedFrame = frameValue;
   document.getElementById('order-price').textContent = formatPriceFromAmount(getEffectiveUnitAmount(product, frameValue));
-  const frames = frameOptions[product.id] || [];
-  const frame = frameValue !== 'none' ? frames.find(f => f.priceId === frameValue) : null;
-  const frameName = frame ? frame.name : 'No frame';
+  const frames = frameOptions[product.frameKey] || [];
+  const frame = frameValue ? frames.find(f => f.priceId === frameValue) : null;
   const frameVal = document.getElementById('order-frame');
-  if (frameVal) frameVal.textContent = frame ? 'Included' : 'No frame';
-  // Update the selected name label inside the size card.
-  const nameEl = document.querySelector(`.size-opt[data-product-id="${product.id}"] .frame-selected-name`);
-  if (nameEl) nameEl.textContent = frameName;
+  if (frameVal) {
+    frameVal.textContent = frame ? `${frame.colourName}` : 'No frame';
+  }
 }
 
 async function loadProducts() {
@@ -459,25 +489,24 @@ async function loadProducts() {
       customSizeRatePerSqm = Number(data.customSizePricePerSqm);
     }
     // Merge frame options from API.
-    // Supports new frameOptions format (array per product with color+name) and the legacy framePrices format.
-    if (data?.frameOptions && typeof data.frameOptions === 'object') {
-      Object.entries(data.frameOptions).forEach(([productId, frames]) => {
-        if (Array.isArray(frames) && frames.length > 0) {
-          const valid = frames.filter(f => f?.priceId && typeof f.unitAmount === 'number');
-          if (valid.length > 0) frameOptions[productId] = valid;
-        }
-      });
-    } else if (data?.framePrices && typeof data.framePrices === 'object') {
-      // Backward compat: convert legacy single-frame format to array format.
-      Object.entries(data.framePrices).forEach(([productId, frameData]) => {
-        if (frameData?.priceId && typeof frameData.unitAmount === 'number') {
-          const existing = frameOptions[productId] || [];
-          frameOptions[productId] = [{
-            priceId: frameData.priceId,
-            unitAmount: frameData.unitAmount,
-            name: existing[0]?.name || 'Frame',
-            color: existing[0]?.color || '#a07840',
-          }];
+    // Supports new framePrices format keyed by frameKey with colour metadata.
+    if (data?.framePrices && typeof data.framePrices === 'object') {
+      Object.entries(data.framePrices).forEach(([frameKey, framesArray]) => {
+        if (Array.isArray(framesArray) && framesArray.length > 0) {
+          const valid = framesArray.filter(f =>
+            f?.priceId &&
+            typeof f.unitAmount === 'number' &&
+            f.colourHex &&
+            f.colourName
+          );
+          if (valid.length > 0) {
+            frameOptions[frameKey] = valid.map(f => ({
+              priceId: f.priceId,
+              unitAmount: f.unitAmount,
+              colourHex: f.colourHex,
+              colourName: f.colourName,
+            }));
+          }
         }
       });
     }
@@ -1143,7 +1172,7 @@ function clearFrame() {
   frameRotation = 0;
   frameZoom = 1.0;
   selectionMeta = null;
-  selectedFrame = 'none';
+  selectedFrame = null;
   const _frameLine = document.getElementById('order-frame-line');
   if (_frameLine) _frameLine.hidden = true;
   const rotBtn = document.getElementById('rotation-btn');
@@ -1332,8 +1361,8 @@ function addSelectionToCart() {
       ? crypto.randomUUID()
       : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  const frames = frameOptions[selectedProduct.id] || [];
-  const selectedFrameData = selectedFrame !== 'none' ? frames.find(f => f.priceId === selectedFrame) : null;
+  const frames = frameOptions[selectedProduct.frameKey] || [];
+  const selectedFrameData = selectedFrame ? frames.find(f => f.priceId === selectedFrame) : null;
   const hasFrame = !!selectedFrameData && selectedProduct.id !== 'custom';
   const frameUnitAmount = hasFrame ? selectedFrameData.unitAmount : 0;
   const baseUnitAmount = Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) : 0;
@@ -1356,7 +1385,7 @@ function addSelectionToCart() {
     frame: hasFrame,
     framePriceId: hasFrame ? selectedFrameData.priceId : null,
     frameUnitAmount,
-    frameName: hasFrame ? selectedFrameData.name : null,
+    frameName: hasFrame ? selectedFrameData.colourName : null,
     ...(selectedProduct.id === 'custom' && {
       customWidthMm: selectedProduct.customWidthMm,
       customHeightMm: selectedProduct.customHeightMm,
@@ -1409,6 +1438,13 @@ function closeCart() {
 
 async function checkoutCart() {
   if (cart.length === 0) return;
+
+  // Validate frame selections
+  if (cart.some((i) => i.frame && !i.framePriceId)) {
+    showBanner('Please select a frame colour for all items with frames.', 'fail');
+    return;
+  }
+
   if (
     cart.some((i) => String(i?.priceId || '').startsWith('fallback_')) ||
     cart.some((i) => i.frame && String(i?.framePriceId || '').startsWith('fallback_'))
