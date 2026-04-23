@@ -357,7 +357,7 @@ footer{background:var(--ink);padding:56px 40px 32px;display:grid;grid-template-c
 .size-opt-name-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .size-opt-badge{font-size:9px;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;color:var(--accent);background:var(--accent-bg);border:1px solid rgba(201,79,44,0.2);padding:2px 6px;border-radius:2px;white-space:nowrap;line-height:1.5}
 .size-opt-art{color:var(--light)}
-.size-opt-price-custom{font-size:12px;color:var(--mid);font-family:var(--sans);font-weight:400}
+.size-opt-price-custom{font-size:15px;color:var(--mid);font-family:var(--sans);font-weight:400}
 
 /* frame options within size cards */
 .frame-opts{width:100%;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);position:relative;z-index:2}
