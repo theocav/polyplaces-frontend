@@ -68,37 +68,6 @@ function sanitizeProductList(list) {
   );
 }
 
-const fallbackProducts = [
-  {
-    id: 'neighbourhood',
-    name: 'Small',
-    displaySize: '500m × 500m',
-    sizeCode: 500,
-    aspectRatio: 1,
-    unitAmount: null,
-    // Placeholder. If the backend is down, we still want the UI usable, but Stripe checkout must be disabled.
-    priceId: 'fallback_neighbourhood',
-  },
-  {
-    id: 'quarter',
-    name: 'Large',
-    displaySize: '2km × 2km',
-    sizeCode: 2000,
-    aspectRatio: 1,
-    unitAmount: null,
-    priceId: 'fallback_quarter',
-  },
-  {
-    id: 'portrait',
-    name: 'A4',
-    displaySize: '750m × 1.05km',
-    sizeCode: 750,
-    aspectRatio: 1.4,
-    unitAmount: null,
-    priceId: 'fallback_portrait',
-  },
-];
-
 const productMeta = {
   neighbourhood: { artSize: '20\u00D720cm', badge: 'Most popular' },
   portrait:      { artSize: '20\u00D728cm', badge: 'Best for gifting' },
@@ -249,10 +218,7 @@ function renderSizeOptions() {
     const badge = meta.badge ? `<span class="size-opt-badge">${meta.badge}</span>` : '';
     const artSize = meta.artSize ? ` &middot; <span class="size-opt-art">${meta.artSize}</span>` : '';
 
-    const frames = frameOptions[product.frameKey];
-    if (product.frameKey && !frames) {
-      throw new Error(`Frames not loaded for product "${product.id}" with frameKey "${product.frameKey}"`);
-    }
+    const frames = product.frameKey ? (frameOptions[product.frameKey] ?? null) : null;
     const frameOptsHtml = frames && frames.length > 0 ? `
       <div class="frame-opts" hidden>
         <div class="frame-opts-header">
@@ -441,10 +407,7 @@ function getEffectiveUnitAmount(product, frameValue) {
   if (!product) return null;
   const amount = product.unitAmount != null ? Number(product.unitAmount) : null;
   if (frameValue && amount != null) {
-    const frames = frameOptions[product.frameKey];
-    if (product.frameKey && !frames) {
-      throw new Error(`Frames not loaded for product "${product.id}" with frameKey "${product.frameKey}"`);
-    }
+    const frames = product.frameKey ? (frameOptions[product.frameKey] ?? null) : null;
     const frame = frames?.find(f => f.priceId === frameValue);
     if (frame) return amount + frame.unitAmount;
   }
@@ -454,10 +417,7 @@ function getEffectiveUnitAmount(product, frameValue) {
 function handleFrameChange(product, frameValue, isEnabled) {
   selectedFrame = frameValue;
   document.getElementById('order-price').textContent = formatPriceFromAmount(getEffectiveUnitAmount(product, frameValue));
-  const frames = frameOptions[product.frameKey];
-  if (product.frameKey && !frames) {
-    throw new Error(`Frames not loaded for product "${product.id}" with frameKey "${product.frameKey}"`);
-  }
+  const frames = product.frameKey ? (frameOptions[product.frameKey] ?? null) : null;
   const frame = frameValue ? frames?.find(f => f.priceId === frameValue) : null;
   const frameVal = document.getElementById('order-frame');
   if (frameVal) {
@@ -471,7 +431,6 @@ async function loadProducts() {
     const data = await res.json();
     const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : [];
     products = sanitizeProductList(list);
-    if (products.length === 0) products = sanitizeProductList(fallbackProducts.slice());
     if (Number.isFinite(Number(data?.customSizePricePerSqm)) && Number(data.customSizePricePerSqm) > 0) {
       customSizeRatePerSqm = Number(data.customSizePricePerSqm);
     }
@@ -502,7 +461,6 @@ async function loadProducts() {
     if (loadingEl) loadingEl.classList.add('hidden');
     return products;
   } catch {
-    products = sanitizeProductList(fallbackProducts.slice());
     renderSizeOptions();
     const loadingEl = document.getElementById('store-size-loading');
     if (loadingEl) loadingEl.classList.add('hidden');
@@ -1352,10 +1310,7 @@ function addSelectionToCart() {
       ? crypto.randomUUID()
       : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  const frames = frameOptions[selectedProduct.frameKey];
-  if (selectedProduct.frameKey && !frames) {
-    throw new Error(`Frames not loaded for product "${selectedProduct.id}" with frameKey "${selectedProduct.frameKey}"`);
-  }
+  const frames = selectedProduct.frameKey ? (frameOptions[selectedProduct.frameKey] ?? null) : null;
   const selectedFrameData = selectedFrame ? frames?.find(f => f.priceId === selectedFrame) : null;
   const hasFrame = !!selectedFrameData && selectedProduct.id !== 'custom';
   const frameUnitAmount = hasFrame ? selectedFrameData.unitAmount : 0;
