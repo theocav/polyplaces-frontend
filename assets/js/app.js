@@ -240,7 +240,7 @@ function renderSizeOptions() {
   const loadingEl = document.getElementById('store-size-loading');
 
   // Hide the loading spinner immediately, regardless of other elements
-  if (loadingEl) loadingEl.classList.add('hidden');
+  if (loadingEl) document.getElementById('store-size-loading').style.display = 'none';
 
   if (!container || !empty) return;
   container.innerHTML = '';
