@@ -114,24 +114,8 @@ const productMeta = {
 };
 
 // Frame add-on options keyed by frameKey (small, medium, large, etc.).
-// Each entry is an array of frame choices with colour metadata; populated from API when available.
-const FRAME_OPTIONS_FALLBACKS = {
-  small: [
-    { unitAmount: 700,  priceId: 'fallback_frame_small_black', colourHex: '#000000', colourName: 'Black' },
-    { unitAmount: 800,  priceId: 'fallback_frame_small_oak',   colourHex: '#a07840', colourName: 'Oak' }
-  ],
-  medium: [
-    { unitAmount: 1000, priceId: 'fallback_frame_medium_black', colourHex: '#000000', colourName: 'Black' },
-    { unitAmount: 1100, priceId: 'fallback_frame_medium_oak',   colourHex: '#a07840', colourName: 'Oak' }
-  ],
-  large: [
-    { unitAmount: 1300, priceId: 'fallback_frame_large_black',  colourHex: '#000000', colourName: 'Black' },
-    { unitAmount: 1400, priceId: 'fallback_frame_large_oak',    colourHex: '#a07840', colourName: 'Oak' }
-  ],
-};
-let frameOptions = Object.fromEntries(
-  Object.entries(FRAME_OPTIONS_FALLBACKS).map(([k, v]) => [k, v.map(f => ({ ...f }))])
-);
+// Each entry is an array of frame choices with colour metadata; populated from API.
+let frameOptions = {};
 let selectedFrame = null; // null | priceId of the selected frame (null = no frame selected)
 
 // Custom size configuration. ratePerSqm can be overridden by the API response.
@@ -253,8 +237,12 @@ function formatPriceFromAmount(amount) {
 function renderSizeOptions() {
   const container = document.getElementById('size-options');
   const empty = document.getElementById('size-options-empty');
+  const loadingEl = document.getElementById('store-size-loading');
   if (!container || !empty) return;
   container.innerHTML = '';
+
+  // Hide the loading spinner
+  if (loadingEl) loadingEl.hidden = true;
 
   if (products.length === 0) {
     empty.textContent = 'No sizes available right now.';
@@ -271,8 +259,11 @@ function renderSizeOptions() {
     const badge = meta.badge ? `<span class="size-opt-badge">${meta.badge}</span>` : '';
     const artSize = meta.artSize ? ` &middot; <span class="size-opt-art">${meta.artSize}</span>` : '';
 
-    const frames = frameOptions[product.frameKey] || [];
-    const frameOptsHtml = frames.length > 0 ? `
+    const frames = frameOptions[product.frameKey];
+    if (product.frameKey && !frames) {
+      throw new Error(`Frames not loaded for product "${product.id}" with frameKey "${product.frameKey}"`);
+    }
+    const frameOptsHtml = frames && frames.length > 0 ? `
       <div class="frame-opts" hidden>
         <div class="frame-opts-header">
           <label class="frame-toggle-label">
@@ -281,15 +272,15 @@ function renderSizeOptions() {
           </label>
         </div>
         <div class="frame-colour-selector" hidden>
-          <div class="frame-colours-header">Select colour</div>
+          <div class="frame-colours-header">Choose colour</div>
           <div class="frame-colour-boxes">
             ${frames.map(frame => `
               <div class="frame-colour-box">
-                <input type="radio" id="frame-colour-${frame.priceId}-${product.id}" name="frame-colour-${product.id}" value="${frame.priceId}" class="frame-colour-radio">
+                <input type="radio" id="frame-colour-${frame.priceId}-${product.id}" name="frame-colour-${product.id}" value="${frame.priceId}" class="frame-colour-radio" />
                 <label for="frame-colour-${frame.priceId}-${product.id}" class="frame-colour-label">
-                  <span class="frame-colour-swatch" style="background:${frame.colourHex}" title="${frame.colourName}"></span>
-                  <span class="frame-colour-name">${frame.colourName}</span>
-                  <span class="frame-colour-price">+${formatPriceFromAmount(frame.unitAmount)}</span>
+                  <span class="frame-colour-swatch" style="background-color:${frame.colourHex}" title="${frame.colourName}"></span>
+                  <div class="frame-colour-name">${frame.colourName}</div>
+                  ${frame.unitAmount ? `<div class="frame-colour-price">+${formatPriceFromAmount(frame.unitAmount)}</div>` : ''}
                 </label>
               </div>
             `).join('')}
@@ -460,8 +451,11 @@ function getEffectiveUnitAmount(product, frameValue) {
   if (!product) return null;
   const amount = product.unitAmount != null ? Number(product.unitAmount) : null;
   if (frameValue && amount != null) {
-    const frames = frameOptions[product.frameKey] || [];
-    const frame = frames.find(f => f.priceId === frameValue);
+    const frames = frameOptions[product.frameKey];
+    if (product.frameKey && !frames) {
+      throw new Error(`Frames not loaded for product "${product.id}" with frameKey "${product.frameKey}"`);
+    }
+    const frame = frames?.find(f => f.priceId === frameValue);
     if (frame) return amount + frame.unitAmount;
   }
   return amount;
@@ -470,8 +464,11 @@ function getEffectiveUnitAmount(product, frameValue) {
 function handleFrameChange(product, frameValue, isEnabled) {
   selectedFrame = frameValue;
   document.getElementById('order-price').textContent = formatPriceFromAmount(getEffectiveUnitAmount(product, frameValue));
-  const frames = frameOptions[product.frameKey] || [];
-  const frame = frameValue ? frames.find(f => f.priceId === frameValue) : null;
+  const frames = frameOptions[product.frameKey];
+  if (product.frameKey && !frames) {
+    throw new Error(`Frames not loaded for product "${product.id}" with frameKey "${product.frameKey}"`);
+  }
+  const frame = frameValue ? frames?.find(f => f.priceId === frameValue) : null;
   const frameVal = document.getElementById('order-frame');
   if (frameVal) {
     frameVal.textContent = frame ? `${frame.colourName}` : 'No frame';
@@ -1365,8 +1362,11 @@ function addSelectionToCart() {
       ? crypto.randomUUID()
       : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 
-  const frames = frameOptions[selectedProduct.frameKey] || [];
-  const selectedFrameData = selectedFrame ? frames.find(f => f.priceId === selectedFrame) : null;
+  const frames = frameOptions[selectedProduct.frameKey];
+  if (selectedProduct.frameKey && !frames) {
+    throw new Error(`Frames not loaded for product "${selectedProduct.id}" with frameKey "${selectedProduct.frameKey}"`);
+  }
+  const selectedFrameData = selectedFrame ? frames?.find(f => f.priceId === selectedFrame) : null;
   const hasFrame = !!selectedFrameData && selectedProduct.id !== 'custom';
   const frameUnitAmount = hasFrame ? selectedFrameData.unitAmount : 0;
   const baseUnitAmount = Number.isFinite(Number(selectedProduct.unitAmount)) ? Number(selectedProduct.unitAmount) : 0;
