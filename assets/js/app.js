@@ -238,11 +238,12 @@ function renderSizeOptions() {
   const container = document.getElementById('size-options');
   const empty = document.getElementById('size-options-empty');
   const loadingEl = document.getElementById('store-size-loading');
+
+  // Hide the loading spinner immediately, regardless of other elements
+  if (loadingEl) loadingEl.hidden = true;
+
   if (!container || !empty) return;
   container.innerHTML = '';
-
-  // Hide the loading spinner
-  if (loadingEl) loadingEl.hidden = true;
 
   if (products.length === 0) {
     empty.textContent = 'No sizes available right now.';
