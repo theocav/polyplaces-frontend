@@ -59,21 +59,13 @@ let cartFocusCleanup = null;
 let navFocusCleanup = null;
 let lastCartFocus = null;
 
-const PRODUCT_NAME_OVERRIDES = {
-  neighbourhood: 'Small',
-  quarter: 'Large',
-  portrait: 'A4',
-};
 const PRODUCT_ID_BLACKLIST = new Set(['district']);
 
 function sanitizeProductList(list) {
   const input = Array.isArray(list) ? list : [];
-  return input
-    .filter((product) => product && !PRODUCT_ID_BLACKLIST.has(String(product.id)))
-    .map((product) => {
-      const overrideName = PRODUCT_NAME_OVERRIDES[String(product.id)];
-      return overrideName ? { ...product, name: overrideName } : product;
-    });
+  return input.filter(
+    (product) => product && !PRODUCT_ID_BLACKLIST.has(String(product.id)),
+  );
 }
 
 const fallbackProducts = [
