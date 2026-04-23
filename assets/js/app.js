@@ -305,7 +305,7 @@ function renderSizeOptions() {
       selectProduct(product);
     };
 
-    if (frames.length > 0) {
+    if (frames && frames.length > 0) {
       const frameToggle = btn.querySelector('.frame-toggle');
       const colourSelector = btn.querySelector('.frame-colour-selector');
       const colourRadios = btn.querySelectorAll('.frame-colour-radio');
