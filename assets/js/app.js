@@ -239,8 +239,6 @@ function renderSizeOptions() {
   const empty = document.getElementById('size-options-empty');
   const loadingEl = document.getElementById('store-size-loading');
 
-  ///if (loadingEl) document.getElementById('store-size-loading').style.display = 'none';
-
   if (!container || !empty) return;
   container.innerHTML = '';
 
