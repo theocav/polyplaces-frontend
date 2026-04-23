@@ -240,7 +240,7 @@ function renderSizeOptions() {
   const loadingEl = document.getElementById('store-size-loading');
 
   // Hide the loading spinner immediately, regardless of other elements
-  if (loadingEl) loadingEl.hidden = true;
+  if (loadingEl) loadingEl.classList.add('hidden');
 
   if (!container || !empty) return;
   container.innerHTML = '';
@@ -510,13 +510,13 @@ async function loadProducts() {
     }
     renderSizeOptions();
     const loadingEl = document.getElementById('store-size-loading');
-    if (loadingEl) loadingEl.hidden = true;
+    if (loadingEl) loadingEl.classList.add('hidden');
     return products;
   } catch {
     products = sanitizeProductList(fallbackProducts.slice());
     renderSizeOptions();
     const loadingEl = document.getElementById('store-size-loading');
-    if (loadingEl) loadingEl.hidden = true;
+    if (loadingEl) loadingEl.classList.add('hidden');
     return [];
   }
 }
@@ -527,12 +527,12 @@ async function initStore() {
 
   const loadingEl = document.getElementById('store-size-loading');
   const emptyEl = document.getElementById('size-options-empty');
-  if (loadingEl) loadingEl.hidden = false;
+  if (loadingEl) loadingEl.classList.remove('hidden');
   if (emptyEl) emptyEl.classList.add('hidden');
 
   await loadProducts();
 
-  if (loadingEl) loadingEl.hidden = true;
+  if (loadingEl) loadingEl.classList.add('hidden');
 
   initMap();
   initCustomSizePanel();
