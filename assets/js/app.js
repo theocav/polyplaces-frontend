@@ -79,14 +79,11 @@ const productMeta = {
 let frameOptions = {};
 let selectedFrame = null; // null | priceId of the selected frame (null = no frame selected)
 
-// Custom size configuration. ratePerSqm can be overridden by the API response.
+// Custom size configuration.
 const CUSTOM_SIZE_MIN_MM = 100;
 const CUSTOM_SIZE_MAX_MM = 330;
 const CUSTOM_SIZE_LARGE_THRESHOLD_MM = 250;
-const CUSTOM_SIZE_LARGE_SURCHARGE_GBP = 5;
-const CUSTOM_SIZE_DEFAULT_RATE_PER_SQM = 1500; // £ per m²
 const CUSTOM_MAP_SCALE = 3; // 1 mm of print = 3 m of map coverage
-let customSizeRatePerSqm = CUSTOM_SIZE_DEFAULT_RATE_PER_SQM;
 
 function getFocusableElements(container) {
   if (!container) return [];
@@ -412,9 +409,6 @@ async function loadProducts() {
     const data = await res.json();
     const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : [];
     products = sanitizeProductList(list);
-    if (Number.isFinite(Number(data?.customSizePricePerSqm)) && Number(data.customSizePricePerSqm) > 0) {
-      customSizeRatePerSqm = Number(data.customSizePricePerSqm);
-    }
     // Merge frame options from API.
     // Supports new framePrices format keyed by frameKey with colour metadata.
     if (data?.framePrices && typeof data.framePrices === 'object') {
@@ -1493,29 +1487,22 @@ function initMobileInputFix() {
 
 // ── Custom size ────────────────────────────────────────────────────────────────
 
-function calculateCustomPrice(widthMm, heightMm) {
-  const areaSqm = (widthMm / 1000) * (heightMm / 1000);
-  let price = Math.round(areaSqm * customSizeRatePerSqm);
-  if (widthMm > CUSTOM_SIZE_LARGE_THRESHOLD_MM || heightMm > CUSTOM_SIZE_LARGE_THRESHOLD_MM) {
-    price += CUSTOM_SIZE_LARGE_SURCHARGE_GBP;
-  }
-  return price; // whole pounds
-}
+// Price for the current custom dimensions as returned by the API (pence).
+// null means no price has been fetched yet or the fetch is in flight.
+let customSizeUnitAmount = null;
+let customSizePriceDebounceTimer = null;
 
-function buildCustomProduct(widthMm, heightMm) {
-  const w = Math.round(Math.max(CUSTOM_SIZE_MIN_MM, Math.min(CUSTOM_SIZE_MAX_MM, widthMm)));
-  const h = Math.round(Math.max(CUSTOM_SIZE_MIN_MM, Math.min(CUSTOM_SIZE_MAX_MM, heightMm)));
-  const pricePounds = calculateCustomPrice(w, h);
+function buildCustomProduct(widthMm, heightMm, unitAmountPence) {
   return {
     id: 'custom',
     name: 'Custom',
-    displaySize: `${w}\u00D7${h}mm`,
-    sizeCode: w * CUSTOM_MAP_SCALE,
-    aspectRatio: h / w,
-    unitAmount: pricePounds * 100,
+    displaySize: `${widthMm}\u00D7${heightMm}mm`,
+    sizeCode: widthMm * CUSTOM_MAP_SCALE,
+    aspectRatio: heightMm / widthMm,
+    unitAmount: unitAmountPence,
     priceId: 'custom',
-    customWidthMm: w,
-    customHeightMm: h,
+    customWidthMm: widthMm,
+    customHeightMm: heightMm,
   };
 }
 
@@ -1526,6 +1513,16 @@ function activateCustomSize() {
   const customBtn = document.querySelector('.size-opt[data-product-id="custom"]');
   if (customBtn) customBtn.classList.add('active');
   updateCustomSizeSelection();
+}
+
+async function fetchCustomSizePrice(widthMm, heightMm) {
+  const res = await fetch(
+    `${apiBase}/api/custom-size-price?widthMm=${encodeURIComponent(widthMm)}&heightMm=${encodeURIComponent(heightMm)}`
+  );
+  if (!res.ok) throw new Error(`Pricing unavailable (${res.status})`);
+  const data = await res.json();
+  if (typeof data?.unitAmount !== 'number') throw new Error('Invalid pricing response');
+  return data.unitAmount; // pence
 }
 
 function updateCustomSizeSelection() {
@@ -1540,20 +1537,29 @@ function updateCustomSizeSelection() {
   const w = Math.round(Math.max(CUSTOM_SIZE_MIN_MM, Math.min(CUSTOM_SIZE_MAX_MM, rawW)));
   const h = Math.round(Math.max(CUSTOM_SIZE_MIN_MM, Math.min(CUSTOM_SIZE_MAX_MM, rawH)));
 
-  const product = buildCustomProduct(w, h);
-
-  // Keep the custom button price label in sync.
-  const priceLabelEl = document.querySelector('.size-opt[data-product-id="custom"] .size-opt-price');
-  if (priceLabelEl) priceLabelEl.textContent = formatPrice(product.unitAmount / 100);
-
-  // Show surcharge note if applicable.
+  // Show surcharge note based on dimensions (no API call needed for this).
   const surchargeEl = document.getElementById('custom-size-surcharge-note');
   if (surchargeEl) {
-    const hasLarge = w > CUSTOM_SIZE_LARGE_THRESHOLD_MM || h > CUSTOM_SIZE_LARGE_THRESHOLD_MM;
-    surchargeEl.hidden = !hasLarge;
+    surchargeEl.hidden = !(w > CUSTOM_SIZE_LARGE_THRESHOLD_MM || h > CUSTOM_SIZE_LARGE_THRESHOLD_MM);
   }
 
-  selectProduct(product);
+  // Show loading state while price is fetched from the server.
+  customSizeUnitAmount = null;
+  const priceLabelEl = document.querySelector('.size-opt[data-product-id="custom"] .size-opt-price');
+  if (priceLabelEl) priceLabelEl.textContent = '…';
+
+  clearTimeout(customSizePriceDebounceTimer);
+  customSizePriceDebounceTimer = setTimeout(async () => {
+    try {
+      const unitAmountPence = await fetchCustomSizePrice(w, h);
+      customSizeUnitAmount = unitAmountPence;
+      if (priceLabelEl) priceLabelEl.textContent = formatPriceFromAmount(unitAmountPence);
+      selectProduct(buildCustomProduct(w, h, unitAmountPence));
+    } catch {
+      if (priceLabelEl) priceLabelEl.textContent = '—';
+      showBanner('Unable to fetch price for this size. Please try again.', 'fail');
+    }
+  }, 400);
 }
 
 function initCustomSizePanel() {
