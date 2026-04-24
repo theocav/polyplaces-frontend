@@ -666,10 +666,11 @@ let frameCorners = null; // [[lat,lng]×4] rotated corners currently drawn
 function initMap() {
   const ukBounds = L.latLngBounds([49.8, -8.7], [60.9, 1.9]);
   map = L.map('store-map', {
-    zoomControl: true,
+    zoomControl: false,
     maxBounds: ukBounds,
     maxBoundsViscosity: 1.0,
   }).setView([51.505, -0.09], 14);
+  L.control.zoom({ position: 'topleft' }).addTo(map);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
     attribution: '\u00A9 OpenStreetMap',
