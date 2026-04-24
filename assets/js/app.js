@@ -82,7 +82,7 @@ let selectedFrame = null; // null | priceId of the selected frame (null = no fra
 // Custom size configuration.
 const CUSTOM_SIZE_MIN_MM = 100;
 const CUSTOM_SIZE_MAX_MM = 330;
-const CUSTOM_SIZE_LARGE_THRESHOLD_MM = 250;
+const CUSTOM_SIZE_LARGE_THRESHOLD_MM = 300; // above this, we show a warning about large sizes
 const CUSTOM_MAP_SCALE = 3; // 1 mm of print = 3 m of map coverage
 
 function getFocusableElements(container) {
