@@ -1,1 +1,68 @@
 DirectoryIndex index.html
+
+# --- HTTPS redirect ---
+RewriteEngine On
+RewriteCond %{HTTPS} !=on
+RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [R=301,L]
+
+# --- Security headers ---
+<IfModule mod_headers.c>
+  # Prevent clickjacking
+  Header always set X-Frame-Options "SAMEORIGIN"
+
+  # Prevent MIME-type sniffing
+  Header always set X-Content-Type-Options "nosniff"
+
+  # XSS protection (legacy browsers)
+  Header always set X-XSS-Protection "1; mode=block"
+
+  # Referrer policy
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+
+  # HSTS — force HTTPS for 1 year
+  Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains" env=HTTPS
+
+  # Permissions policy — disable unused browser features
+  Header always set Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()"
+
+  # Content Security Policy
+  Header always set Content-Security-Policy "\
+    default-src 'self'; \
+    script-src 'self' https://unpkg.com; \
+    style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com; \
+    font-src 'self' https://fonts.gstatic.com; \
+    img-src 'self' https://*.tile.openstreetmap.org data:; \
+    connect-src 'self' https://api.polyplaces.co.uk https://nominatim.openstreetmap.org; \
+    frame-ancestors 'none'; \
+    base-uri 'self'; \
+    form-action 'self' https://api.polyplaces.co.uk; \
+    upgrade-insecure-requests\
+  "
+</IfModule>
+
+# --- Custom error pages ---
+ErrorDocument 404 /404.html
+
+# --- Block access to sensitive files ---
+<FilesMatch "\.(env|md|json|lock|log)$">
+  <IfModule mod_authz_core.c>
+    Require all denied
+  </IfModule>
+  <IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+  </IfModule>
+</FilesMatch>
+
+# --- Disable directory listing ---
+Options -Indexes
+
+# --- Cache control for versioned assets ---
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType image/png "access plus 1 month"
+  ExpiresByType image/webp "access plus 1 month"
+  ExpiresByType image/jpeg "access plus 1 month"
+</IfModule>

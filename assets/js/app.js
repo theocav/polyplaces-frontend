@@ -1616,9 +1616,44 @@ function initFrameControls() {
 
 // ── End frame controls ─────────────────────────────────────────────────────────
 
+// ── Cookie consent ────────────────────────────────────────────────────────────
+
+function initCookieConsent() {
+  if (localStorage.getItem('polyplaces_cookie_consent')) return;
+
+  const banner = document.createElement('div');
+  banner.className = 'cookie-banner';
+  banner.setAttribute('role', 'dialog');
+  banner.setAttribute('aria-label', 'Cookie consent');
+  banner.innerHTML =
+    '<span>We use essential cookies to make this site work. We also collect basic, anonymous analytics to improve your experience. No advertising tracking. <a href="/privacy/">Learn more</a>.</span>' +
+    '<div class="cookie-banner-actions">' +
+    '<button type="button" class="cookie-btn cookie-btn-accept">Accept</button>' +
+    '<button type="button" class="cookie-btn cookie-btn-reject">Reject non-essential</button>' +
+    '</div>';
+
+  document.body.appendChild(banner);
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => banner.classList.add('is-visible'));
+  });
+
+  banner.querySelector('.cookie-btn-accept').addEventListener('click', () => {
+    localStorage.setItem('polyplaces_cookie_consent', 'accepted');
+    banner.classList.remove('is-visible');
+  });
+
+  banner.querySelector('.cookie-btn-reject').addEventListener('click', () => {
+    localStorage.setItem('polyplaces_cookie_consent', 'rejected');
+    banner.classList.remove('is-visible');
+  });
+}
+
+// ── End cookie consent ────────────────────────────────────────────────────────
+
 initCartUI();
 initNavUI();
 showCheckoutBanner();
+initCookieConsent();
 
 if (document.getElementById('storePage')) {
   initStore();
