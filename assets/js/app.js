@@ -657,8 +657,6 @@ function showLanding() {
 let map, layerGroup, bbox, bboxLayer, handle;
 let selectionMeta = null;
 let cart = [];
-let reverseGeocodeTimer = null;
-let lastReverseStamp = 0;
 let cartPreviewMaps = new Map();
 let frameRotation = 0;   // degrees 0-359
 let frameZoom = 1.0;     // 0.7-1.3 geographic scale factor
@@ -1109,8 +1107,6 @@ function clearFrame() {
   if (frameControlsEl) frameControlsEl.hidden = true;
   document.getElementById('sel-run').disabled = true;
   document.getElementById('sel-run').textContent = 'Add to cart \u2192';
-  document.getElementById('order-location').textContent = 'Select on map';
-  document.getElementById('order-location').classList.add('pending');
   document.getElementById('order-status-msg').textContent =
     'Select a scale to place your frame.';
   document.getElementById('map-hint').textContent = 'Select a scale to place your frame';
@@ -1137,66 +1133,19 @@ function updateLocationDisplay() {
     lat: (bbox.south + bbox.north) / 2,
     lng: (bbox.west + bbox.east) / 2,
   };
-  const locationText = 'Locating...';
   selectionMeta = {
     center,
     bbox,
     rotation: frameRotation,
     zoom: frameZoom,
-    locationText,
+    locationText: null,
   };
-  const locationEl = document.getElementById('order-location');
-  locationEl.textContent = locationText;
-  locationEl.classList.remove('pending');
   const btn = document.getElementById('sel-run');
   if (btn && btn.textContent.includes('Added to cart')) {
     btn.textContent = 'Add to cart \u2192';
   }
-  queueReverseGeocode(center);
 }
 
-function queueReverseGeocode(center) {
-  if (!center) return;
-  if (reverseGeocodeTimer) clearTimeout(reverseGeocodeTimer);
-  reverseGeocodeTimer = setTimeout(() => {
-    const now = Date.now();
-    if (now - lastReverseStamp < 1100) {
-      queueReverseGeocode(center);
-      return;
-    }
-    lastReverseStamp = now;
-    reverseGeocode(center);
-  }, 700);
-}
-
-async function reverseGeocode(center) {
-  try {
-    const url = `${apiBase}/api/reverse-geocode?lat=${center.lat}&lon=${center.lng}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error('Reverse geocoding failed.');
-    const data = await res.json();
-    const label = data?.label || data?.display_name || 'Location unavailable';
-    selectionMeta = { ...selectionMeta, locationText: label };
-    const locationEl = document.getElementById('order-location');
-    locationEl.textContent = label;
-    locationEl.classList.remove('pending');
-  } catch {
-    if (selectionMeta) {
-      selectionMeta = { ...selectionMeta, locationText: 'Location unavailable' };
-    }
-    const locationEl = document.getElementById('order-location');
-    if (locationEl) {
-      locationEl.textContent = 'Couldn\u2019t detect \u2014 name it below';
-      locationEl.classList.add('pending');
-    }
-    // Gently draw attention to the label input so the user can name the location themselves.
-    const labelInput = document.getElementById('custom-location-label');
-    if (labelInput && !labelInput.value) {
-      labelInput.classList.add('geocode-nudge');
-      setTimeout(() => labelInput.classList.remove('geocode-nudge'), 2000);
-    }
-  }
-}
 
 function loadCart() {
   try {
@@ -1675,12 +1624,25 @@ if (document.getElementById('storePage')) {
   initStore();
 }
 
-function reviewSelection() {
+async function reviewSelection() {
   if (!selectedProduct || !bbox || !selectionMeta) return;
-  addSelectionToCart();
   const btn = document.getElementById('sel-run');
+  btn.disabled = true;
+  btn.textContent = 'Locating\u2026';
+  try {
+    const center = selectionMeta.center;
+    const url = `${apiBase}/api/reverse-geocode?lat=${center.lat}&lon=${center.lng}`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('Reverse geocoding failed.');
+    const data = await res.json();
+    selectionMeta.locationText = data?.label || data?.display_name || 'Location unavailable';
+  } catch {
+    selectionMeta.locationText = 'Location unavailable';
+  }
+  addSelectionToCart();
   document.getElementById('order-status-msg').textContent = '\u2713 Added to cart.';
   btn.textContent = '\u2713 Added to cart';
+  btn.disabled = false;
   openCart();
 }
 
