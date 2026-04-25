@@ -295,8 +295,7 @@ footer{background:var(--ink);padding:56px 40px 32px;display:grid;grid-template-c
 .map-toolbar-spacer{flex:1;pointer-events:none}
 .map-toolbar-end{flex:1;display:flex;justify-content:flex-end;pointer-events:none}
 .map-toolbar-end>*{pointer-events:auto}
-.map-toolbar:has(.frame-controls[hidden]) .map-toolbar-spacer{display:none}
-.map-toolbar:has(.frame-controls[hidden]) .map-toolbar-end{display:none}
+.map-toolbar:has(.frame-controls[hidden]) .map-toolbar-end>*{visibility:hidden;pointer-events:none}
 .map-search{
   position:relative;
   display:flex;gap:8px;align-items:center;
@@ -427,7 +426,8 @@ footer{background:var(--ink);padding:56px 40px 32px;display:grid;grid-template-c
 .cart-item-geo{font-size:11px;color:var(--light);margin-top:1px}
 
 /* keep leaflet controls/attribution below cart overlay+drawer */
-.leaflet-control-container{z-index:799 !important}
+.leaflet-control-container{z-index:500 !important}
+#store-map{isolation:isolate}
 
 /* CART */
 .cart-drawer{
