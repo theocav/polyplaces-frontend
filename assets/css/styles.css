@@ -426,6 +426,9 @@ footer{background:var(--ink);padding:56px 40px 32px;display:grid;grid-template-c
 .cart-item-custom-label{font-weight:600;color:var(--ink)}
 .cart-item-geo{font-size:11px;color:var(--light);margin-top:1px}
 
+/* keep leaflet controls/attribution below cart overlay+drawer */
+.leaflet-control-container{z-index:799 !important}
+
 /* CART */
 .cart-drawer{
   position:fixed;top:0;right:0;height:100vh;width:360px;background:var(--white);
