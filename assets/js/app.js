@@ -1665,6 +1665,18 @@ if (document.getElementById('landing')) {
   loadHomepagePrices();
 }
 
+// Cookie notice — runs on any page that includes #cookie-notice
+(function () {
+  const n = document.getElementById('cookie-notice');
+  if (!n || localStorage.getItem('pp_cn')) return;
+  n.style.display = 'flex';
+  const btn = document.getElementById('cookie-dismiss');
+  if (btn) btn.onclick = () => {
+    n.style.display = 'none';
+    localStorage.setItem('pp_cn', '1');
+  };
+}());
+
 if (document.getElementById('storePage')) {
   initStore();
 }
