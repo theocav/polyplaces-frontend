@@ -10,7 +10,9 @@ if (runtimeEnv.SENTRY_DSN && typeof Sentry !== 'undefined') {
   Sentry.init({
     dsn: runtimeEnv.SENTRY_DSN,
     environment: runtimeEnv.POLYPLACES_SITE_URL?.includes('localhost') ? 'development' : 'production',
+    sendDefaultPii: false,
   });
+  myUndefinedFunction();
 }
 
 if (prefersReducedMotion) {
