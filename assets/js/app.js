@@ -4,15 +4,46 @@ const prefersReducedMotion = window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)').matches
   : false;
 
-const runtimeEnv = window.__POLYPLACES_ENV__ || {};
+// Bootstrap: read API base from env.js stub (not a secret — just a URL needed to reach the backend)
+const _bootstrapEnv = window.__POLYPLACES_ENV__ || {};
+const _CONFIG_API_BASE = String(
+  _bootstrapEnv.POLYPLACES_API_BASE_URL ||
+    document.querySelector('meta[name="api-base"]')?.getAttribute('content') ||
+    'https://api.polyplaces.co.uk'
+).replace(/\/$/, '');
 
-if (runtimeEnv.SENTRY_DSN && typeof Sentry !== 'undefined') {
-  Sentry.init({
-    dsn: runtimeEnv.SENTRY_DSN,
-    environment: runtimeEnv.POLYPLACES_SITE_URL?.includes('localhost') ? 'development' : 'production',
-    sendDefaultPii: false,
-  });
-}
+// Runtime config — overwritten by fetchRemoteConfig(); sane defaults until then
+let apiBase = _CONFIG_API_BASE;
+let NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
+let SEARCH_COUNTRY_CODES = 'gb';
+let SEARCH_VIEWBOX = '-8.7,60.9,1.9,49.8';
+
+// Fetch all config (including secrets) from backend. Non-blocking — defaults above
+// cover the window between page load and fetch completion.
+const _configReady = (async () => {
+  try {
+    const res = await fetch(`${_CONFIG_API_BASE}/api/config`, {
+      credentials: 'omit',
+      cache: 'no-store',
+    });
+    if (res.ok) {
+      const cfg = await res.json();
+      if (cfg.POLYPLACES_API_BASE_URL) apiBase = String(cfg.POLYPLACES_API_BASE_URL).replace(/\/$/, '');
+      if (cfg.POLYPLACES_NOMINATIM_URL) NOMINATIM_SEARCH_URL = String(cfg.POLYPLACES_NOMINATIM_URL).replace(/\/$/, '');
+      if (cfg.POLYPLACES_SEARCH_COUNTRY_CODES) SEARCH_COUNTRY_CODES = cfg.POLYPLACES_SEARCH_COUNTRY_CODES;
+      if (cfg.POLYPLACES_SEARCH_VIEWBOX) SEARCH_VIEWBOX = cfg.POLYPLACES_SEARCH_VIEWBOX;
+      if (cfg.SENTRY_DSN && typeof Sentry !== 'undefined') {
+        Sentry.init({
+          dsn: cfg.SENTRY_DSN,
+          environment: cfg.POLYPLACES_SITE_URL?.includes('localhost') ? 'development' : 'production',
+          sendDefaultPii: false,
+        });
+      }
+    }
+  } catch {
+    // Config fetch failed — defaults apply, Sentry inactive this session
+  }
+})();
 
 if (prefersReducedMotion) {
   document.querySelectorAll('.reveal').forEach((el) => el.classList.add('in'));
@@ -44,19 +75,6 @@ if (_hintSentinel && _mapHint) {
 }
 
 const cartStorageKey = 'polyplaces_cart_v1';
-const apiBase =
-  String(
-    runtimeEnv.POLYPLACES_API_BASE_URL ||
-      document.querySelector('meta[name="api-base"]')?.getAttribute('content') ||
-      ''
-  ).replace(/\/$/, '');
-const NOMINATIM_SEARCH_URL =
-  String(runtimeEnv.POLYPLACES_NOMINATIM_URL || 'https://nominatim.openstreetmap.org/search').replace(
-    /\/$/,
-    ''
-  );
-const SEARCH_COUNTRY_CODES = runtimeEnv.POLYPLACES_SEARCH_COUNTRY_CODES || 'gb';
-const SEARCH_VIEWBOX = runtimeEnv.POLYPLACES_SEARCH_VIEWBOX || '-8.7,60.9,1.9,49.8';
 
 let storeInited = false;
 let _checkZoomOverlap = null; // set by initFrameControls, called by redrawFrame
@@ -1205,6 +1223,12 @@ function saveCart() {
   localStorage.setItem(cartStorageKey, JSON.stringify(cart));
 }
 
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str == null ? '' : String(str);
+  return d.innerHTML;
+}
+
 function formatPrice(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return '\u00A3\u2014';
@@ -1242,12 +1266,12 @@ function renderCart() {
     const itemEl = document.createElement('div');
     itemEl.className = 'cart-item';
     const labelLine = item.customLabel
-      ? `<div class="cart-item-meta cart-item-custom-label">${item.customLabel}</div><div class="cart-item-geo">${item.location}</div>`
-      : `<div class="cart-item-meta">${item.location}</div>`;
-    const frameLine = item.frame ? `<div class="cart-item-frame">${item.frameName || 'With frame'}</div>` : '';
+      ? `<div class="cart-item-meta cart-item-custom-label">${escapeHtml(item.customLabel)}</div><div class="cart-item-geo">${escapeHtml(item.location)}</div>`
+      : `<div class="cart-item-meta">${escapeHtml(item.location)}</div>`;
+    const frameLine = item.frame ? `<div class="cart-item-frame">${escapeHtml(item.frameName || 'With frame')}</div>` : '';
     itemEl.innerHTML = `
-      <div class="cart-item-preview" data-item-id="${item.id}"></div>
-      <div class="cart-item-title">${item.name}</div>
+      <div class="cart-item-preview" data-item-id="${escapeHtml(item.id)}"></div>
+      <div class="cart-item-title">${escapeHtml(item.name)}</div>
       ${frameLine}
       ${labelLine}
       <div class="cart-item-row">
