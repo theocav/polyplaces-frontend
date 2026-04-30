@@ -13,9 +13,11 @@
   <meta property="og:type" content="website"/>
   <meta property="og:site_name" content="Polyplaces"/>
   <meta property="og:url" content="https://polyplaces.co.uk/"/>
+  <meta property="og:image" content="https://polyplaces.co.uk/assets/imgs/74c45980-8acc-4220-b7b1-4b813a2ba1a1.webp"/>
   <meta name="twitter:card" content="summary_large_image"/>
   <meta name="twitter:title" content="Polyplaces — Custom 3D Map Sculptures"/>
   <meta name="twitter:description" content="Custom 3D map sculptures of any place on Earth. Choose your area, pick a scale, and we sculpt your topography into a tactile keepsake."/>
+  <meta name="twitter:image" content="https://polyplaces.co.uk/assets/imgs/74c45980-8acc-4220-b7b1-4b813a2ba1a1.webp"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <meta name="api-base" content="https://api.polyplaces.co.uk"/>
   <link rel="icon" type="image/png" href="/assets/favicon.png?v=1"/>
@@ -26,6 +28,36 @@
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <link rel="stylesheet" href="./assets/css/styles.css?v=9cc77c22"/>
+  <style>.prod-price-tag{font-size:12px;font-weight:500;color:var(--accent,#c94f2c);letter-spacing:0.02em;margin-bottom:4px;display:block}</style>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Polyplaces",
+        "url": "https://polyplaces.co.uk",
+        "logo": "https://polyplaces.co.uk/assets/favicon.png",
+        "contactPoint": {"@type": "ContactPoint", "contactType": "customer support", "url": "https://polyplaces.co.uk/contact/"}
+      },
+      {
+        "@type": "WebSite",
+        "name": "Polyplaces",
+        "url": "https://polyplaces.co.uk",
+        "potentialAction": {"@type": "SearchAction", "target": "https://polyplaces.co.uk/store/"}
+      },
+      {
+        "@type": "ItemList",
+        "name": "Custom 3D Map Sculptures",
+        "itemListElement": [
+          {"@type": "ListItem", "position": 1, "item": {"@type": "Product", "name": "Small 3D Map Sculpture", "description": "A compact 20\u00d720cm 3D topographic sculpture of any UK location. Made to order.", "brand": {"@type": "Brand", "name": "Polyplaces"}, "image": "https://polyplaces.co.uk/assets/imgs/Small%20frame.webp", "url": "https://polyplaces.co.uk/store/", "offers": {"@type": "Offer", "priceCurrency": "GBP", "availability": "https://schema.org/InStock", "url": "https://polyplaces.co.uk/store/"}}},
+          {"@type": "ListItem", "position": 2, "item": {"@type": "Product", "name": "A4 3D Map Sculpture", "description": "A4 portrait format 3D topographic sculpture of any UK location. Made to order.", "brand": {"@type": "Brand", "name": "Polyplaces"}, "image": "https://polyplaces.co.uk/assets/imgs/A4%20frame.webp", "url": "https://polyplaces.co.uk/store/", "offers": {"@type": "Offer", "priceCurrency": "GBP", "availability": "https://schema.org/InStock", "url": "https://polyplaces.co.uk/store/"}}},
+          {"@type": "ListItem", "position": 3, "item": {"@type": "Product", "name": "Large 3D Map Sculpture", "description": "Our largest standard size 40\u00d740cm 3D topographic sculpture of any UK location. Made to order.", "brand": {"@type": "Brand", "name": "Polyplaces"}, "image": "https://polyplaces.co.uk/assets/imgs/Large%20frame.webp", "url": "https://polyplaces.co.uk/store/", "offers": {"@type": "Offer", "priceCurrency": "GBP", "availability": "https://schema.org/InStock", "url": "https://polyplaces.co.uk/store/"}}}
+        ]
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -146,6 +178,7 @@
           <div class="prod-name">Small</div>
           <div class="prod-desc">A compact sculpture in perfect relief. Ideal for where you live, work, or grew up. Ships as a 20&times;20cm matte white sculpture.</div>
           <div class="prod-footer">
+            <span class="prod-price-tag" id="prod-price-neighbourhood" hidden></span>
             <span class="prod-btn">Customise &rarr;</span>
           </div>
         </div>
@@ -163,6 +196,7 @@
           <div class="prod-name">A4</div>
           <div class="prod-desc">A4 portrait format &mdash; frames beautifully on a wall. A thoughtful gift for someone who cherishes a particular place.</div>
           <div class="prod-footer">
+            <span class="prod-price-tag" id="prod-price-portrait" hidden></span>
             <span class="prod-btn">Customise &rarr;</span>
           </div>
         </div>
@@ -179,6 +213,7 @@
           <div class="prod-name">Large</div>
           <div class="prod-desc">Our largest standard size. Capture valleys, coastlines, and big landscapes in extraordinary topographic detail.</div>
           <div class="prod-footer">
+            <span class="prod-price-tag" id="prod-price-quarter" hidden></span>
             <span class="prod-btn">Customise &rarr;</span>
           </div>
         </div>
@@ -269,11 +304,29 @@
   <div class="footer-col"><h4>Shop</h4><ul><li><a href="/store/">Design yours</a></li><li><a href="#products">Small</a></li><li><a href="#products">A4</a></li><li><a href="#products">Large</a></li></ul></div>
   <div class="footer-col"><h4>Company</h4><ul><li><a href="/about/">About</a></li><li><a href="#how">How it works</a></li><li><a href="#reviews">Reviews</a></li><li><a href="/contact/">Contact</a></li></ul></div>
   <div class="footer-col"><h4>Help</h4><ul><li><a href="/shipping/">Shipping &amp; returns</a></li><li><a href="/faq/">FAQ</a></li><li><a href="/care/">Care guide</a></li><li><a href="/privacy/">Privacy policy</a></li><li><a href="/terms/">Terms &amp; conditions</a></li></ul></div>
-  <div class="footer-bottom"><span class="footer-copy">&copy; 2026 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span><span class="footer-copy">V0.0.3</span></div>
+  <div class="footer-bottom"><span class="footer-copy">&copy; 2026 Polyplaces Ltd. All rights reserved.</span><span class="footer-copy">Geographic data: OpenStreetMap contributors</span></div>
 </footer>
 
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script defer src="./assets/js/env.js?v=e57c473f"></script>
-<script defer src="./assets/js/app.js?v=d12b7ad8"></script>
+<script defer src="./assets/js/app.js?v=2d934dc4"></script>
+<script defer data-domain="polyplaces.co.uk" src="https://plausible.io/js/script.js"></script>
+
+<div id="cookie-notice" role="dialog" aria-label="Cookie notice" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#f7f4ef;border-top:1px solid #e8e3db;padding:14px 24px;display:none;align-items:center;justify-content:space-between;gap:16px;font-size:13px;color:#524a41;z-index:10000;flex-wrap:wrap">
+  <span>This site uses <a href="https://stripe.com/gb/privacy" target="_blank" rel="noopener" style="color:#c94f2c">Stripe</a> for checkout and <a href="https://www.openstreetmap.org/privacy" target="_blank" rel="noopener" style="color:#c94f2c">OpenStreetMap</a> for maps. No tracking cookies. <a href="/privacy/" style="color:#c94f2c">Privacy policy</a>.</span>
+  <button type="button" id="cookie-dismiss" style="white-space:nowrap;background:#2a2218;color:#fff;border:none;padding:8px 16px;border-radius:2px;cursor:pointer;font-size:13px;font-family:inherit">Got it</button>
+</div>
+<script>
+(function(){
+  var n = document.getElementById('cookie-notice');
+  if (n && !localStorage.getItem('pp_cn')) {
+    n.style.display = 'flex';
+    document.getElementById('cookie-dismiss').onclick = function() {
+      n.style.display = 'none';
+      localStorage.setItem('pp_cn', '1');
+    };
+  }
+}());
+</script>
 </body>
 </html>

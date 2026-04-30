@@ -409,6 +409,7 @@ async function loadProducts() {
     const data = await res.json();
     const list = Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : [];
     products = sanitizeProductList(list);
+    try { localStorage.setItem(_PRODUCTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), products })); } catch (_) {}
     // Merge frame options from API.
     // Supports new framePrices format keyed by frameKey with colour metadata.
     if (data?.framePrices && typeof data.framePrices === 'object') {
@@ -547,7 +548,9 @@ function setupMapSearch() {
       row.dataset.index = String(idx);
       row.setAttribute('role', 'option');
       row.setAttribute('aria-selected', idx === activeIndex ? 'true' : 'false');
-      row.innerHTML = `<strong>${item.display_name}</strong>`;
+      const _strong = document.createElement('strong');
+      _strong.textContent = item.display_name;
+      row.appendChild(_strong);
       row.onclick = () => applyResult(item);
       row.onmouseenter = () => setActiveIndex(idx);
       row.onfocus = () => setActiveIndex(idx);
@@ -1360,12 +1363,41 @@ async function checkoutCart() {
 }
 
 function initCartUI() {
+  const cartToggle = document.getElementById('cart-toggle');
+  if (!cartToggle) return;
   loadCart();
   renderCart();
-  document.getElementById('cart-toggle').onclick = openCart;
+  cartToggle.onclick = openCart;
   document.getElementById('cart-close').onclick = closeCart;
   document.getElementById('cart-overlay').onclick = closeCart;
   document.getElementById('cart-checkout').onclick = checkoutCart;
+}
+
+const _PRODUCTS_CACHE_KEY = 'polyplaces_products_cache_v1';
+const _PRODUCTS_CACHE_TTL = 3600000; // 1 hour
+
+async function loadHomepagePrices() {
+  let prods;
+  try {
+    let cached;
+    try { cached = JSON.parse(localStorage.getItem(_PRODUCTS_CACHE_KEY)); } catch (_) {}
+    if (cached && typeof cached.ts === 'number' && Date.now() - cached.ts < _PRODUCTS_CACHE_TTL && Array.isArray(cached.products)) {
+      prods = cached.products;
+    } else {
+      const res = await fetch(`${apiBase}/api/products`);
+      if (!res.ok) return;
+      const data = await res.json();
+      prods = sanitizeProductList(Array.isArray(data?.products) ? data.products : Array.isArray(data) ? data : []);
+      try { localStorage.setItem(_PRODUCTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), products: prods })); } catch (_) {}
+    }
+    prods.forEach(p => {
+      const el = document.getElementById(`prod-price-${p.id}`);
+      if (el && typeof p.unitAmount === 'number' && p.unitAmount > 0) {
+        el.textContent = `From \u00a3${Math.round(p.unitAmount / 100)}`;
+        el.removeAttribute('hidden');
+      }
+    });
+  } catch (_) { /* silently fail — prices are optional on homepage */ }
 }
 
 function initNavUI() {
@@ -1629,6 +1661,9 @@ function initFrameControls() {
 initCartUI();
 initNavUI();
 showCheckoutBanner();
+if (document.getElementById('landing')) {
+  loadHomepagePrices();
+}
 
 if (document.getElementById('storePage')) {
   initStore();

@@ -3,7 +3,8 @@
     "allow": [
       "Bash(grep -r \"stripe\\\\|payment\\\\|checkout\" /c/Users/theoc/Documents/Playground/*.html --include=\"*.html\")",
       "Bash(npm run *)",
-      "Bash(curl -s http://localhost:3000/store/)"
+      "Bash(curl -s http://localhost:3000/store/)",
+      "Bash(grep -E \"\\\\.html$|/$\")"
     ]
   },
   "enabledPlugins": {

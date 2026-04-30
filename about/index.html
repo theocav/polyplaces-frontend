@@ -4,8 +4,20 @@
   <meta charset="utf-8"/>
   <title>About &mdash; Polyplaces</title>
   <meta name="description" content="Polyplaces creates bespoke 3D topographic map sculptures of places that matter — handmade to order in the UK."/>
+  <meta name="referrer" content="strict-origin-when-cross-origin"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <meta name="theme-color" content="#f7f4ef"/>
+  <link rel="canonical" href="https://polyplaces.co.uk/about/"/>
+  <meta property="og:title" content="About — Polyplaces"/>
+  <meta property="og:description" content="Polyplaces creates bespoke 3D topographic map sculptures of places that matter — handmade to order in the UK."/>
+  <meta property="og:type" content="website"/>
+  <meta property="og:site_name" content="Polyplaces"/>
+  <meta property="og:url" content="https://polyplaces.co.uk/about/"/>
+  <meta property="og:image" content="https://polyplaces.co.uk/assets/imgs/74c45980-8acc-4220-b7b1-4b813a2ba1a1.webp"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:title" content="About — Polyplaces"/>
+  <meta name="twitter:description" content="Polyplaces creates bespoke 3D topographic map sculptures of places that matter — handmade to order in the UK."/>
+  <meta name="twitter:image" content="https://polyplaces.co.uk/assets/imgs/74c45980-8acc-4220-b7b1-4b813a2ba1a1.webp"/>
   <link rel="icon" type="image/png" href="/assets/favicon.png?v=1"/>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -18,15 +30,24 @@
 
 <nav aria-label="Primary">
   <a href="/" class="nav-logo">Polyplaces<sup>&reg;</sup></a>
-  <div class="nav-drawer">
-    <ul class="nav-links">
+  <button type="button" class="nav-toggle" id="nav-toggle" aria-label="Open menu" aria-expanded="false" aria-controls="nav-drawer">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-drawer" id="nav-drawer" aria-hidden="true" tabindex="-1">
+    <ul class="nav-links" id="nav-links">
       <li><a href="/#how">How it works</a></li>
       <li><a href="/#products">Sculptures</a></li>
       <li><a href="/#reviews">Reviews</a></li>
       <li><a href="/store/" class="nav-cta btn">Customise yours &rarr;</a></li>
+      <li><button type="button" class="nav-cart" id="cart-toggle" aria-label="Open cart" aria-expanded="false" aria-controls="cart-drawer">Cart <span id="cart-count">0</span></button></li>
     </ul>
   </div>
 </nav>
+<div class="nav-overlay" id="nav-overlay" aria-hidden="true"></div>
+<div class="checkout-banner" id="checkout-banner" role="status" aria-live="polite" aria-hidden="true">
+  <div class="checkout-banner-text" id="checkout-banner-text"></div>
+  <button type="button" class="checkout-banner-close" id="checkout-banner-close" aria-label="Dismiss banner">Dismiss</button>
+</div>
 
 <main id="main" style="padding-top:60px">
   <div class="container" style="padding-top:64px;padding-bottom:80px;max-width:680px">
@@ -62,7 +83,24 @@
   <div class="footer-bottom"><span class="footer-copy">&copy; 2026 Polyplaces Ltd. All rights reserved.</span></div>
 </footer>
 
+<div class="cart-overlay" id="cart-overlay" aria-hidden="true"></div>
+<aside class="cart-drawer" id="cart-drawer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Shopping cart" tabindex="-1">
+  <div class="cart-header">
+    <h3>Your cart</h3>
+    <button type="button" class="cart-close" id="cart-close" aria-label="Close cart">Close</button>
+  </div>
+  <div class="cart-items" id="cart-items">
+    <div class="cart-empty">Your cart is empty. Add a sculpture to continue.</div>
+  </div>
+  <div class="cart-footer">
+    <div class="cart-total-row"><span class="label">Subtotal</span><span class="value" id="cart-total">&pound;0</span></div>
+    <button type="button" class="cart-checkout" id="cart-checkout">Checkout securely with Stripe</button>
+    <div class="cart-note">You will be redirected to Stripe for payment. We&rsquo;ll email you to confirm your sculpture looks right before we begin making it.</div>
+  </div>
+</aside>
+
 <script defer src="../assets/js/env.js?v=e57c473f"></script>
-<script defer src="../assets/js/app.js?v=d12b7ad8"></script>
+<script defer src="../assets/js/app.js?v=2d934dc4"></script>
+<script defer data-domain="polyplaces.co.uk" src="https://plausible.io/js/script.js"></script>
 </body>
 </html>
