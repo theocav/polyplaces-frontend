@@ -309,12 +309,15 @@
 
 <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script defer src="./assets/js/env.js?v=e57c473f"></script>
-<script defer src="./assets/js/app.js?v=132a39c4"></script>
+<script defer src="./assets/js/app.js?v=07238d10"></script>
 <script defer data-domain="polyplaces.co.uk" src="https://plausible.io/js/script.js"></script>
 
-<div id="cookie-notice" role="dialog" aria-label="Cookie notice" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#f7f4ef;border-top:1px solid #e8e3db;padding:14px 24px;align-items:center;justify-content:space-between;gap:16px;font-size:13px;color:#524a41;z-index:10000;flex-wrap:wrap">
-  <span>This site uses <a href="https://stripe.com/gb/privacy" target="_blank" rel="noopener" style="color:#c94f2c">Stripe</a> for checkout and <a href="https://www.openstreetmap.org/privacy" target="_blank" rel="noopener" style="color:#c94f2c">OpenStreetMap</a> for maps. No tracking cookies. <a href="/privacy/" style="color:#c94f2c">Privacy policy</a>.</span>
-  <button type="button" id="cookie-dismiss" style="white-space:nowrap;background:#2a2218;color:#fff;border:none;padding:8px 16px;border-radius:2px;cursor:pointer;font-size:13px;font-family:inherit">Got it</button>
+<div id="cookie-notice" role="dialog" aria-label="Cookie notice" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #e5e5e5;padding:12px 20px;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:#666;z-index:10000;flex-wrap:wrap">
+  <span>We use cookies to enable essential features. <a href="/privacy/" style="color:#888;text-decoration:underline">Privacy policy</a>.</span>
+  <span style="display:flex;gap:8px;white-space:nowrap">
+    <button type="button" id="cookie-reject" style="background:transparent;color:#888;border:1px solid #ccc;padding:6px 14px;border-radius:3px;cursor:pointer;font-size:12px;font-family:inherit">Reject</button>
+    <button type="button" id="cookie-accept" style="background:#555;color:#fff;border:1px solid #555;padding:6px 14px;border-radius:3px;cursor:pointer;font-size:12px;font-family:inherit">Accept</button>
+  </span>
 </div>
 </body>
 </html>

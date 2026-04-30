@@ -1670,11 +1670,14 @@ if (document.getElementById('landing')) {
   const n = document.getElementById('cookie-notice');
   if (!n || localStorage.getItem('pp_cn')) return;
   n.style.display = 'flex';
-  const btn = document.getElementById('cookie-dismiss');
-  if (btn) btn.onclick = () => {
+  const dismiss = (val) => {
     n.style.display = 'none';
-    localStorage.setItem('pp_cn', '1');
+    localStorage.setItem('pp_cn', val);
   };
+  const accept = document.getElementById('cookie-accept');
+  const reject = document.getElementById('cookie-reject');
+  if (accept) accept.onclick = () => dismiss('1');
+  if (reject) reject.onclick = () => dismiss('0');
 }());
 
 if (document.getElementById('storePage')) {
