@@ -95,9 +95,9 @@ function sanitizeProductList(list) {
 }
 
 const productMeta = {
-  neighbourhood: { artSize: '20\u00D720cm', badge: 'Most popular' },
-  portrait:      { artSize: '20\u00D728cm', badge: 'Best for gifting' },
-  quarter:       { artSize: '40\u00D740cm', badge: null },
+  small:  { artSize: '20\u00D720cm', badge: 'Most popular' },
+  a4:     { artSize: '20\u00D728cm', badge: 'Best for gifting' },
+  large:  { artSize: '40\u00D740cm', badge: null },
 };
 
 // Frame add-on options keyed by frameKey (small, medium, large, etc.).
