@@ -206,6 +206,7 @@ nav{
 .prod-footer{display:flex;align-items:center;justify-content:space-between}
 .prod-price{font-family:var(--serif);font-size:22px;font-weight:400;color:var(--ink)}
 .prod-price small{font-family:var(--sans);font-size:11px;color:var(--light);font-weight:400;margin-left:2px}
+.prod-price-tag{font-size:12px;font-weight:500;color:var(--accent,#c94f2c);letter-spacing:0.02em;margin-bottom:4px;display:block}
 .prod-btn{background:var(--ink);color:var(--bg);border:none;font-family:var(--sans);font-size:12px;font-weight:500;padding:9px 20px;cursor:pointer;transition:background 0.2s;border-radius:2px;}
 .prod-btn:hover{background:var(--accent)}
 

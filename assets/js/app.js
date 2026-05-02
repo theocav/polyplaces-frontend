@@ -515,7 +515,15 @@ async function initStore() {
     selectProduct(selectedProduct);
     return;
   }
-  if (products.length > 0) selectProduct(products[0]);
+  const _scaleParam = new URLSearchParams(window.location.search).get('scale');
+  const _preselect = _scaleParam && products.find(
+    (p) => p.name?.toLowerCase().replace(/\s+/g, '') === _scaleParam.toLowerCase()
+  );
+  if (_preselect) {
+    selectProduct(_preselect);
+  } else if (products.length > 0) {
+    selectProduct(products[0]);
+  }
 }
 
 function setupMapSearch() {
@@ -1448,7 +1456,7 @@ async function loadHomepagePrices() {
       try { localStorage.setItem(_PRODUCTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), products: prods })); } catch (_) {}
     }
     prods.forEach(p => {
-      const el = document.getElementById(`prod-price-${p.id}`);
+      const el = document.getElementById(`prod-price-${p.frameKey}`);
       if (el && typeof p.unitAmount === 'number' && p.unitAmount > 0) {
         el.textContent = `From \u00a3${Math.round(p.unitAmount / 100)}`;
         el.removeAttribute('hidden');
