@@ -1,0 +1,9 @@
+node_modules/
+.claude/
+.vscode/
+.env
+.env.example
+composer.json
+package.json
+package-lock.json
+config-endpoint-spec.md
